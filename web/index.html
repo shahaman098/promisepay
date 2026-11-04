@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PromisePay — promises that pay themselves</title>
+  <style>
+    :root {
+      --bg: #0a0e1a; --panel: #111827; --panel2: #0d1424; --line: #1e293b;
+      --text: #e2e8f0; --dim: #94a3b8; --brand: #3b82f6; --good: #34d399; --bad: #f87171; --warn: #fbbf24;
+      font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    header { display: flex; align-items: center; gap: 14px; padding: 18px 28px; border-bottom: 1px solid var(--line); background: var(--panel2); }
+    header .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, #2563eb, #06b6d4); display: grid; place-items: center; font-weight: 800; }
+    header h1 { font-size: 18px; margin: 0; }
+    header .tag { color: var(--dim); font-size: 12.5px; }
+    header .spacer { flex: 1; }
+    .modechip { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--dim); }
+    nav { display: flex; gap: 4px; padding: 10px 28px 0; }
+    nav button { background: none; border: 0; color: var(--dim); font-size: 14px; font-weight: 600; padding: 10px 16px; cursor: pointer; border-radius: 10px 10px 0 0; border-bottom: 2px solid transparent; }
+    nav button.active { color: var(--text); border-bottom-color: var(--brand); background: var(--panel); }
+    main { max-width: 1080px; margin: 0 auto; padding: 20px 28px 60px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+    .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+    .row { display: flex; gap: 14px; align-items: center; }
+    .grow { flex: 1; }
+    input, textarea { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; font-size: 14px; width: 100%; }
+    textarea { resize: vertical; min-height: 64px; font-family: inherit; }
+    button.act { background: var(--brand); color: #fff; border: 0; border-radius: 9px; padding: 9px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    button.act.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); font-weight: 600; }
+    button.act.good { background: #059669; }
+    button.act:disabled { opacity: .45; cursor: default; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .b-monitored { background: #1e3a5f; color: #7dd3fc; }
+    .b-refunded { background: #064e3b; color: var(--good); }
+    .b-refund_failed { background: #450a0a; color: var(--bad); }
+    .b-created { background: #374151; color: #d1d5db; }
+    .b-breach { background: #451a03; color: var(--warn); }
+    .pill { color: var(--dim); font-size: 12px; }
+    pre { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; font-size: 12px; line-height: 1.5; }
+    .kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 14px; font-size: 13px; }
+    .kv dt { color: var(--dim); } .kv dd { margin: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { text-align: left; color: var(--dim); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+    td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr.obl-refused td { background: rgba(248, 113, 113, .07); }
+    .timeline { list-style: none; margin: 0; padding: 0; }
+    .timeline li { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; }
+    .timeline .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); margin-top: 6px; flex: none; }
+    .hidden { display: none; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .small { font-size: 12px; color: var(--dim); }
+    .hero-note { background: linear-gradient(135deg, #10214a, #0a2d3d); border: 1px solid #1d3a6b; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">PP</div>
+    <div>
+      <h1>PromisePay</h1>
+      <div class="tag">Merchants sell promises · the AI verifies the breach · the refund moves itself — or refuses, on the record</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="modechip" id="modechip">mode: loading…</div>
+  </header>
+
+  <nav>
+    <button id="tab-buyer" class="active">Buyer</button>
+    <button id="tab-merchant">Merchant</button>
+    <button id="tab-audit">Enforcement record</button>
+  </nav>
+
+  <main>
+    <!-- ============ BUYER ============ -->
+    <section id="view-buyer">
+      <div class="card hero-note">
+        <div class="row">
+          <div class="grow">
+            <div style="font-size:17px; font-weight:700;">"2-day delivery or $5 back."</div>
+            <div class="small" style="margin-top:4px;">This store's promises are enforced by an AI escrow: verified against real evidence, paid automatically through PayPal. No forms. No arguments.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Check a promise</h2>
+        <div class="row">
+          <input id="buyer-id" class="grow" placeholder="guarantee id, e.g. g_0001" />
+          <button class="act" id="buyer-go">Check</button>
+        </div>
+      </div>
+      <div id="buyer-result"></div>
+    </section>
+
+    <!-- ============ MERCHANT ============ -->
+    <section id="view-merchant" class="hidden">
+      <div class="card">
+        <h2>Sell a promise (in prose — the parser turns it into an executable SLA or refuses)</h2>
+        <div class="grid2">
+          <div>
+            <textarea id="np-text" placeholder="e.g. 2-day delivery or $5 back">2-day delivery or $5 back</textarea>
+            <div class="row" style="margin-top:8px;">
+              <input id="np-order" class="grow" placeholder="PayPal order id (e.g. OFFLINE-ORDER-1)" />
+              <input id="np-capture" class="grow" placeholder="capture id (optional)" />
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <button class="act ghost" id="np-preview">Parse preview</button>
+              <button class="act" id="np-create">Create guarantee</button>
+            </div>
+          </div>
+          <pre id="np-out">Parse result appears here. Refusals are the product working: an unexecutable promise never moves money.</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Guarantees</h2>
+        <div id="g-list"><div class="small">loading…</div></div>
+      </div>
+    </section>
+
+    <!-- ============ AUDIT ============ -->
+    <section id="view-audit" class="hidden">
+      <div class="card">
+        <h2>Enforcement record — every refused transition, persisted</h2>
+        <div id="audit-table"><div class="small">loading…</div></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const H = { "x-api-key": "dev-key-change-me", "content-type": "application/json" };
+    const j = async (path, opts = {}) => {
+      const res = await fetch(path, { headers: H, ...opts });
+      const body = await res.json().catch(() => ({}));
+      return { status: res.status, body };
+    };
+    const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+    // ---- tabs -----------------------------------------------------------
+    const tabs = { buyer: "view-buyer", merchant: "view-merchant", audit: "view-audit" };
+    for (const [name, view] of Object.entries(tabs)) {
+      document.getElementById(`tab-${name}`).onclick = () => {
+        for (const [n, v] of Object.entries(tabs)) {
+          document.getElementById(v).classList.toggle("hidden", n !== name);
+          document.getElementById(`tab-${n}`).classList.toggle("active", n === name);
+        }
+        if (name === "merchant") loadGuarantees();
+        if (name === "audit") loadAudit();
+      };
+    }
+
+    // ---- mode chip -------------------------------------------------------
+    fetch("/api/mode").then(r => r.json()).then(m => {
+      document.getElementById("modechip").textContent = `PayPal: ${m.paypalMode} · AI: ${m.ai}`;
+    }).catch(() => {});
+
+    // ---- buyer ------------------------------------------------------------
+    document.getElementById("buyer-go").onclick = async () => {
+      const id = document.getElementById("buyer-id").value.trim() || "g_0001";
+      const { body: g } = await j(`/api/guarantees/${id}`);
+      const el = document.getElementById("buyer-result");
+      if (!g.id) { el.innerHTML = `<div class="card small">No promise found for ${esc(id)}.</div>`; return; }
+      const sla = g.sla || {};
+      const remedyLine = sla.remedy ? `${sla.remedy.type === "fixed_amount" ? "$" + sla.remedy.amount : sla.remedy.type === "full_refund" ? "full refund" : "the difference"}` : "—";
+      const windowLine = sla.verification?.withinDays ? `${sla.verification.withinDays} days` : sla.verification?.withinHours ? `${sla.verification.withinHours} hours` : "—";
+      const events = (g.events || []).map(e => `<li><span class="dot"></span><div><strong>${esc(e.type)}</strong> <span class="small">${esc(e.at)}</span><br/><span class="small">${esc(e.detail || "")}</span></div></li>`).join("");
+      el.innerHTML = `
+        <div class="card">
+          <div class="row">
+            <div class="grow">
+              <div style="font-weight:700; font-size:15px;">"${esc(g.promiseText)}"</div>
+              <div class="small">Guarantee ${esc(g.id)} · parsed by ${esc(g.aiSource)} · order ${esc(g.orderId)}</div>
+            </div>
+            <span class="badge b-${esc(g.status)}">${esc(g.status)}</span>
+          </div>
+          <dl class="kv" style="margin-top:12px;">
+            <dt>Checked</dt><dd>${esc(sla.kind || "—")} within ${esc(windowLine)}</dd>
+            <dt>Remedy</dt><dd>${esc(remedyLine)}</dd>
+            ${g.refund ? `<dt>Refunded</dt><dd>$${esc(g.refund.amount)} · ${esc(g.refund.id)} · provenance ${esc(g.refund.provenance)}</dd>` : ""}
+          </dl>
+          ${events ? `<h2 style="margin-top:14px;">Evidence timeline</h2><ul class="timeline">${events}</ul>` : ""}
+        </div>`;
+    };
+
+    // ---- merchant: create + parse preview ---------------------------------
+    const npBody = () => ({
+      promiseText: document.getElementById("np-text").value,
+      orderId: document.getElementById("np-order").value || "OFFLINE-ORDER-1",
+      captureId: document.getElementById("np-capture").value || null,
+    });
+    document.getElementById("np-preview").onclick = async () => {
+      const { body } = await j("/api/parse-preview", { method: "POST", body: JSON.stringify({ promiseText: npBody().promiseText }) });
+      document.getElementById("np-out").textContent = JSON.stringify(body, null, 2);
+    };
+    document.getElementById("np-create").onclick = async () => {
+      const { status, body } = await j("/api/promises", { method: "POST", body: JSON.stringify(npBody()) });
+      document.getElementById("np-out").textContent = (status === 422 ? "REFUSED — " + JSON.stringify(body, null, 2) : JSON.stringify(body, null, 2));
+      loadGuarantees();
+    };
+
+    // ---- merchant: guarantee list + lifecycle actions ----------------------
+    async function loadGuarantees() {
+      const { body: list } = await j("/api/guarantees");
+      const el = document.getElementById("g-list");
+      if (!Array.isArray(list) || list.length === 0) { el.innerHTML = `<div class="small">No guarantees yet — create one above or run <code>npm run seed</code>.</div>`; return; }
+      el.innerHTML = "";
+      for (const g of list) {
+        const div = document.createElement("div");
+        div.className = "row";
+        div.style.cssText = "border-top:1px solid var(--line); padding-top:12px; margin-top:12px; flex-wrap:wrap;";
+        div.innerHTML = `
+          <div class="grow">
+            <div><strong>${esc(g.id)}</strong> <span class="badge b-${esc(g.status)}">${esc(g.status)}</span> <span class="pill">v${g.version} · ${esc(g.aiSource)} · ${g.eventCount} evidence events · ${g.auditCount} audit records</span></div>
+            <div class="small">"${esc(g.promiseText)}" → order ${esc(g.orderId)}</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="act ghost" data-act="ev-stall" data-id="${g.id}">＋ stalled</button>
+            <button class="act ghost" data-act="ev-exception" data-id="${g.id}">＋ carrier exception</button>
+            <button class="act ghost" data-act="ev-delivered" data-id="${g.id}">＋ delivered late</button>
+            <button class="act ghost" data-act="evaluate" data-id="${g.id}">Evaluate</button>
+            <button class="act good" data-act="execute" data-id="${g.id}" data-version="${g.version}">Execute remedy</button>
+          </div>`;
+        el.appendChild(div);
+      }
+    }
+
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const acts = {
+        "ev-stall": { type: "tracking.stalled", detail: "held at regional facility beyond promised window" },
+        "ev-exception": { type: "tracking.exception", detail: "package lost in transit" },
+        "ev-delivered": { type: "tracking.delivered", detail: "delivered late (after promised window)" },
+      };
+      if (acts[btn.dataset.act]) {
+        await j("/api/events", { method: "POST", body: JSON.stringify({ guaranteeId: id, eventId: "ui_" + Date.now(), ...acts[btn.dataset.act] }) });
+        loadGuarantees();
+        return;
+      }
+      if (btn.dataset.act === "evaluate") {
+        const { body } = await j(`/api/guarantees/${id}/evaluate`);
+        showOut(`// evaluation of ${id}`, body);
+        return;
+      }
+      if (btn.dataset.act === "execute") {
+        const { body } = await j(`/api/guarantees/${id}/execute-remedy`, { method: "POST", body: JSON.stringify({ expectedVersion: Number(btn.dataset.version), requestedBy: "console" }) });
+        showOut(`// execute-remedy on ${id}`, body);
+        loadGuarantees();
+      }
+    });
+    function showOut(label, obj) {
+      document.getElementById("np-out").textContent = `${label}\n` + JSON.stringify(obj, null, 2);
+      document.getElementById("tab-merchant").click();
+    }
+
+    // ---- audit --------------------------------------------------------------
+    async function loadAudit() {
+      const { body } = await j("/api/audit");
+      const rows = [...body].reverse().map(a => {
+        const refused = a.kind === "failed_obligations";
+        const detail = refused
+          ? (a.obligations || []).map(o => `<span class="badge b-refund_failed">${esc(o.obligation)}</span> <span class="small">${esc(o.observed ?? o.reason ?? "")}${o.required ? " · required " + esc(o.required) : ""}</span>`).join("<br/>")
+          : esc(a.kind) + (a.reason ? ` — ${esc(a.reason)}` : "");
+        return `<tr class="${refused ? "obl-refused" : ""}"><td>${esc(a.at?.replace("T", " ").slice(0, 19) ?? "")}</td><td>${esc(a.guaranteeId ?? "—")}</td><td>${detail}</td></tr>`;
+      }).join("");
+      document.getElementById("audit-table").innerHTML = `<table><thead><tr><th>Time</th><th>Guarantee</th><th>Record</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    // boot: prefill buyer view with the seeded hero guarantee
+    document.getElementById("buyer-go").click();
+  </script>
+</body>
+</html>

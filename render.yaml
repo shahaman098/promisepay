@@ -1,0 +1,30 @@
+# Render blueprint — one-click deploy of PromisePay.
+# 1. Push this repo to GitHub.
+# 2. Render → New → Blueprint → pick the repo.
+# 3. Fill the env vars in the Render dashboard (never commit .env):
+#    PROMISEPAY_MODE=sandbox, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET,
+#    PAYPAL_WEBHOOK_ID, PROMISEPAY_API_KEY=<random>, OPENAI_API_KEY (optional)
+services:
+  - type: web
+    name: promisepay
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm run start
+    healthCheckPath: /api/mode
+    envVars:
+      - key: PROMISEPAY_MODE
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PROMISEPAY_API_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: "22"

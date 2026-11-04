@@ -1,0 +1,125 @@
+{
+  "guarantees": {
+    "g_0001": {
+      "id": "g_0001",
+      "version": 1,
+      "status": "monitored",
+      "promiseText": "2-day delivery or $5 back",
+      "sla": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 2
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 5
+        }
+      },
+      "aiSource": "fallback",
+      "orderId": "OFFLINE-ORDER-X",
+      "payment": {
+        "captureId": "OFFLINE-CAPTURE-X"
+      },
+      "createdAt": "2026-11-04T00:25:00.904Z"
+    },
+    "g_0002": {
+      "id": "g_0002",
+      "version": 1,
+      "status": "monitored",
+      "promiseText": "fixed within 24 hours or full refund",
+      "sla": {
+        "kind": "resolution_within",
+        "verification": {
+          "type": "status_timeline",
+          "source": "merchant_status_feed",
+          "withinHours": 24
+        },
+        "remedy": {
+          "type": "full_refund",
+          "amount": null
+        }
+      },
+      "aiSource": "fallback",
+      "orderId": "OFFLINE-ORDER-Y",
+      "payment": {
+        "captureId": "OFFLINE-CAPTURE-Y"
+      },
+      "createdAt": "2026-11-04T00:25:00.907Z"
+    }
+  },
+  "events": [
+    {
+      "guaranteeId": "g_0002",
+      "type": "tracking.stalled",
+      "at": "2026-11-04T00:25:00.909Z",
+      "detail": "held",
+      "eventId": "e_1",
+      "receivedAt": "2026-11-04T00:25:00.909Z"
+    }
+  ],
+  "audit": [
+    {
+      "at": "2026-11-04T00:25:00.904Z",
+      "guaranteeId": "g_0001",
+      "kind": "created",
+      "aiSource": "fallback",
+      "sla": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 2
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 5
+        }
+      }
+    },
+    {
+      "at": "2026-11-04T00:25:00.908Z",
+      "guaranteeId": "g_0002",
+      "kind": "created",
+      "aiSource": "fallback",
+      "sla": {
+        "kind": "resolution_within",
+        "verification": {
+          "type": "status_timeline",
+          "source": "merchant_status_feed",
+          "withinHours": 24
+        },
+        "remedy": {
+          "type": "full_refund",
+          "amount": null
+        }
+      }
+    },
+    {
+      "at": "2026-11-04T00:25:00.911Z",
+      "guaranteeId": "g_0002",
+      "kind": "evaluation",
+      "verdict": "INCONCLUSIVE",
+      "reason": "no resolution evidence; window still open or feed missing",
+      "evidenceRefs": [],
+      "checks": [
+        {
+          "obligation": "any_resolution_evidence",
+          "observed": "none",
+          "pass": false
+        }
+      ],
+      "paymentProvenance": "fixture",
+      "paymentRetrievedAt": null
+    },
+    {
+      "at": "2026-11-04T00:25:00.914Z",
+      "kind": "webhook_rejected",
+      "provenance": "fixture"
+    }
+  ],
+  "sequences": {
+    "guarantee": 2
+  }
+}
