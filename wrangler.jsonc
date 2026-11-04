@@ -1,0 +1,22 @@
+// Cloudflare blueprint for PromisePay.
+// Deploy: npx wrangler deploy
+// Secrets: npx wrangler secret put PAYPAL_CLIENT_ID        (then PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID)
+// Without PayPal secrets the worker runs in offline (fixture) mode — honest provenance labels in the UI.
+{
+  "name": "promisepay",
+  "account_id": "cf7590968e7d3a54091b3a94df6f1506",
+  "main": "worker/entry.js",
+  "compatibility_date": "2026-10-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./web",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/webhooks/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "PROMISEPAY_DO", "class_name": "PromisePayDO" }]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PromisePayDO"] }
+  ]
+}

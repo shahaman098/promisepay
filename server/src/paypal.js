@@ -147,9 +147,10 @@ export async function listRefundsForCapture(captureId) {
 // --- Webhook signature verification -------------------------------------
 
 export async function verifyWebhookSignature(headers, rawBody) {
+  const hget = (name) => (typeof headers?.get === "function" ? headers.get(name) : headers?.[name]);
   if (MODE === "offline") {
     // Offline test webhooks carry a dev signature header; document clearly.
-    return { provenance: "fixture", verified: headers["x-promisepay-dev-webhook"] === "1" };
+    return { provenance: "fixture", verified: hget("x-promisepay-dev-webhook") === "1" };
   }
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
   if (!webhookId) throw new Error("PAYPAL_WEBHOOK_ID missing for sandbox webhook verification");
@@ -158,13 +159,13 @@ export async function verifyWebhookSignature(headers, rawBody) {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      auth_algo: headers.get("paypal-auth-algo"),
-      cert_url: headers.get("paypal-cert-url"),
-      transmission_id: headers.get("paypal-transmission-id"),
-      transmission_sig: headers.get("paypal-transmission-sig"),
-      transmission_time: headers.get("paypal-transmission-time"),
+      auth_algo: hget("paypal-auth-algo"),
+      cert_url: hget("paypal-cert-url"),
+      transmission_id: hget("paypal-transmission-id"),
+      transmission_sig: hget("paypal-transmission-sig"),
+      transmission_time: hget("paypal-transmission-time"),
       webhook_id: webhookId,
-      webhook_event: JSON.parse(rawBody.toString("utf8")),
+      webhook_event: typeof rawBody?.toString === "function" ? JSON.parse(rawBody.toString("utf8")) : rawBody,
     }),
   });
   if (!res.ok) return { provenance: "paypal-sandbox", verified: false, status: res.status };

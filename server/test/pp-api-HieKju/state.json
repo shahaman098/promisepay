@@ -1,0 +1,14 @@
+{
+  "guarantees": {},
+  "events": [],
+  "audit": [
+    {
+      "at": "2026-11-04T00:30:50.992Z",
+      "kind": "webhook_rejected",
+      "provenance": "fixture"
+    }
+  ],
+  "sequences": {
+    "guarantee": 0
+  }
+}

@@ -11,5 +11,8 @@
   },
   "dependencies": {
     "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.157.0"
   }
 }

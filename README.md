@@ -21,13 +21,19 @@ npm start       # http://localhost:8787 — buyer view + merchant console served
 npm test        # 17 tests: the adversarial matrix + parser eval corpus + API contract suite
 ```
 
-## Deploy (Render, one click)
+## Deploy (Cloudflare Workers — live demo)
 
-```bash
-git push && render blueprint launch   # or: Render → New → Blueprint → pick the repo
-```
+Deployed with `npx wrangler deploy` → **https://promisepay.kiritokris.workers.dev**
 
-`render.yaml` provisions the web service with `healthCheckPath: /api/mode`; fill `PROMISEPAY_MODE=sandbox` + PayPal keys in the dashboard. See `credits.md` in the hackathon workspace for the Render credit claim link ($50, code on the hackathon resources page).
+- The API runs inside a single **Durable Object** (`PromisePayDO`): every request serializes through it, state persists in DO storage, and the enforcement CAS is honored across the fleet of one.
+- The demo UI ships via **Workers Static Assets**; `/api/*` and `/webhooks/*` are routed to the worker first (`run_worker_first`).
+- Without PayPal secrets the worker runs in offline (fixture) mode with honest provenance labels. To flip it to real sandbox money:
+  ```bash
+  npx wrangler secret put PAYPAL_CLIENT_ID
+  npx wrangler secret put PAYPAL_CLIENT_SECRET
+  npx wrangler secret put PAYPAL_WEBHOOK_ID
+  ```
+- Demo build note: the API-key gate exists but ships with the demo default key so judges can run the UI; rotate `PROMISEPAY_API_KEY` for any real deployment.
 
 ## Run it against the real sandbox
 
