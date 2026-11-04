@@ -35,6 +35,14 @@ Deployed with `npx wrangler deploy` → **https://promisepay.kiritokris.workers.
   ```
 - Demo build note: the API-key gate exists but ships with the demo default key so judges can run the UI; rotate `PROMISEPAY_API_KEY` for any real deployment.
 
+## Go-live checklist (flip the deployed demo to real sandbox money)
+
+1. `npx wrangler secret put PAYPAL_CLIENT_ID` — then `PAYPAL_CLIENT_SECRET`, then `PAYPAL_WEBHOOK_ID` (from developer.paypal.com → Apps & Credentials → Sandbox; webhook id appears after creating a webhook)
+2. Create a webhook in the PayPal developer dashboard pointing to `https://promisepay.kiritokris.workers.dev/webhooks/paypal`, subscribed to `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.DECLINED`
+3. Redeploy (`npx wrangler deploy`) — `/api/mode` now reports `paypalMode: sandbox`
+4. Run `npm run verify:sandbox` locally with the same keys to prove the loop before judging
+5. Record the demo video with [`video/SCRIPT.md`](./video/SCRIPT.md); paste the YouTube URL into [`SUBMISSION.md`](./SUBMISSION.md) and submit on Devpost (early check: Nov 5; deadline: Nov 12, 8pm GMT)
+
 ## Run it against the real sandbox
 
 ```bash
