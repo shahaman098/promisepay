@@ -139,6 +139,63 @@ export const routes = [
     handler: () => ok(store.allAudit()),
   },
 
+  // --- Demo reset: curated dataset showing every behavior of the product ---
+  // One of each promise family and one of each outcome, with authentic audit
+  // trails (remedies execute through the real enforcement spine).
+  {
+    method: "POST",
+    path: "/api/demo/seed",
+    auth: true,
+    handler: async () => {
+      const fresh = { guarantees: {}, events: [], audit: [], sequences: { guarantee: 0 } };
+      store.initState(fresh);
+      await store.persist();
+      store.audit({ kind: "demo_reset", note: "demo dataset reseeded" });
+
+      const mk = async (text, orderId, captureId, events, daysAgo) => {
+        const parsed = await parsePromise(text);
+        if (parsed.refusal) return null;
+        const id = store.nextGuaranteeId();
+        const createdAt = new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+        store.putGuarantee({ id, version: 1, status: "monitored", promiseText: text, sla: parsed.sla, aiSource: parsed.source, orderId, payment: { captureId }, createdAt });
+        for (const e of events) {
+          store.addEvent({ guaranteeId: id, eventId: `sd_${id}_${Math.random().toString(36).slice(2, 7)}`, at: new Date(Date.now() - e.daysAgo * 86_400_000).toISOString(), ...e });
+        }
+        return id;
+      };
+      const day = (n, extra = {}) => ({ daysAgo: n, ...extra });
+
+      // 1. Hero: delivery breach → refunded (the receipt the buyer view opens on)
+      const g1 = await mk("2-day delivery or $5 back", "OFFLINE-ORDER-1", "OFFLINE-CAPTURE-1", [
+        day(3, { type: "tracking.stalled", detail: "held at regional facility beyond promised window" }),
+        day(1, { type: "tracking.exception", detail: "package lost in transit" }),
+      ], 4);
+      // 2. Resolution promise, window still open
+      await mk("Repairs completed within 48 hours or full refund", "OFFLINE-ORDER-2", "OFFLINE-CAPTURE-2", [
+        day(1, { type: "status.opened", detail: "repair ticket opened, technician scheduled" }),
+      ], 1.5);
+      // 3. Price match with lower price observed (breach pending evaluation)
+      await mk("Best price this week or the difference back", "OFFLINE-ORDER-3", "OFFLINE-CAPTURE-3", [
+        day(2, { type: "price.lower_elsewhere", detail: "same SKU found at $12.50 less", amountDelta: 12.5 }),
+      ], 3);
+      // 4. Delivered late → refunded via the delivered-late path
+      const g4 = await mk("Delivery in 5 days or $10 back", "OFFLINE-ORDER-4", "OFFLINE-CAPTURE-4", [
+        day(2, { type: "tracking.delivered", detail: "delivered after the promised window" }),
+      ], 8);
+      // 5. Refund declined by PayPal → refund_failed with the obligation on record
+      const g5 = await mk("2-day delivery or $5 back", "OFFLINE-ORDER-5", "OFFLINE-DECLINE", [
+        day(2, { type: "tracking.exception", detail: "package lost in transit" }),
+      ], 3);
+
+      // Execute the remedies through the real spine (authentic audit records).
+      const results = {};
+      for (const id of [g1, g4, g5].filter(Boolean)) {
+        results[id] = (await executeRemedy(id, { expectedVersion: 1, requestedBy: "demo-seed" })).ok === true ? "refunded" : (store.getGuarantee(id)?.status ?? "unknown");
+      }
+      return ok({ seeded: store.getState().sequences.guarantee, outcomes: results });
+    },
+  },
+
   // --- PayPal webhooks (signature-verified) --------------------------------
   {
     method: "POST",

@@ -4,6 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PromisePay — promises that pay themselves</title>
+  <meta name="description" content="Merchants sell promises. PromisePay's AI verifies the breach against real evidence and moves the refund through PayPal — or refuses, on the record." />
+  <meta property="og:title" content="PromisePay — promises that pay themselves" />
+  <meta property="og:description" content="Self-executing service guarantees on PayPal: AI-parsed promises, evidence-gated refunds, fail-closed enforcement with a persisted record." />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#f4f4ed" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d2ff00'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='800' text-anchor='middle' fill='%23282c20'%3EPP%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/mona-sans@5.3.0/index.min.css" />
   <style>
     :root {
@@ -29,9 +35,13 @@
 
     header {
       position: sticky; top: 0; z-index: 10;
-      display: flex; align-items: center; gap: 18px;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
       padding: 14px 28px; background: color-mix(in srgb, var(--cream) 88%, transparent);
       backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    }
+    @media (max-width: 700px) {
+      header { padding: 12px 16px; }
+      main { padding: 28px 16px 60px; }
     }
     .wordmark { font-weight: 800; font-size: 17px; line-height: 0.92; letter-spacing: 0.02em; text-transform: uppercase; }
     .wordmark span { display: block; }
@@ -211,7 +221,10 @@
       </div>
 
       <div class="card">
-        <h2>Guarantees</h2>
+        <h2 style="justify-content:space-between;">
+          <span style="display:inline-flex; align-items:center; gap:10px;">Guarantees</span>
+          <button class="act ghost" id="seed-reset" style="padding:7px 14px; font-size:11px;">Reset demo data</button>
+        </h2>
         <div id="g-list"><div class="small">loading…</div></div>
       </div>
     </section>
@@ -240,6 +253,12 @@
       return { status: res.status, body: await res.json().catch(() => ({})) };
     };
     const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const fmt = (iso) => {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d)) return String(iso);
+      return d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    };
 
     // ---- tabs -----------------------------------------------------------
     const tabs = { buyer: "view-buyer", merchant: "view-merchant", audit: "view-audit" };
@@ -268,7 +287,7 @@
       const sla = g.sla || {};
       const remedyLine = sla.remedy ? `${sla.remedy.type === "fixed_amount" ? "$" + sla.remedy.amount : sla.remedy.type === "full_refund" ? "full refund" : "the difference"}` : "—";
       const windowLine = sla.verification?.withinDays ? `${sla.verification.withinDays} days` : sla.verification?.withinHours ? `${sla.verification.withinHours} hours` : "—";
-      const events = (g.events || []).map(e => `<li><span class="dot"></span><div><strong>${esc(e.type)}</strong> <span class="small">${esc(e.at)}</span><br/><span class="small">${esc(e.detail || "")}</span></div></li>`).join("");
+      const events = (g.events || []).map(e => `<li><span class="dot"></span><div><strong>${esc(e.type)}</strong> <span class="small">${esc(fmt(e.at))}</span><br/><span class="small">${esc(e.detail || "")}</span></div></li>`).join("");
       el.innerHTML = `
         <div class="card">
           <div class="row">
@@ -281,7 +300,9 @@
           <dl class="kv" style="margin-top:16px;">
             <dt>Checked</dt><dd>${esc(sla.kind || "—")} within ${esc(windowLine)}</dd>
             <dt>Remedy</dt><dd>${esc(remedyLine)}</dd>
-            ${g.refund ? `<dt>Refunded</dt><dd>$${esc(g.refund.amount)} · ${esc(g.refund.id)} · provenance ${esc(g.refund.provenance)}</dd>` : ""}
+            ${g.refund ? `<dt>Refunded</dt><dd>$${esc(g.refund.amount)} · ${esc(g.refund.id)} · provenance ${esc(g.refund.provenance)}${g.refund.retrievedAt ? ` · retrieved ${esc(fmt(g.refund.retrievedAt))}` : ""}</dd>` : ""}
+            ${g.status === "refund_failed" ? `<dt>Refund</dt><dd>declined by PayPal — obligation on record, state open</dd>` : ""}
+            ${g.closedAt ? `<dt>Closed</dt><dd>${esc(fmt(g.closedAt))}</dd>` : ""}
           </dl>
           ${events ? `<h2 style="margin-top:18px;">Evidence timeline</h2><ul class="timeline">${events}</ul>` : ""}
         </div>`;
@@ -321,7 +342,7 @@
               <span class="badge b-${esc(g.status)}">${esc(g.status)}</span>
               <span class="pill small">v${g.version} · ${esc(g.aiSource)} · ${g.eventCount} evidence · ${g.auditCount} records</span>
             </div>
-            <div class="small" style="margin-top:4px;">"${esc(g.promiseText)}" → order ${esc(g.orderId)}</div>
+            <div class="small" style="margin-top:4px;">"${esc(g.promiseText)}" → order ${esc(g.orderId)}${g.refund ? ` · <strong style="color:var(--ink)">$${esc(g.refund.amount)} refunded</strong> (${esc(g.refund.id)})` : ""}</div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
             <button class="act ghost" data-act="ev-stall" data-id="${g.id}">＋ stalled</button>
@@ -373,10 +394,19 @@
         const detail = refused
           ? (a.obligations || []).map(o => `<span class="badge b-refused">${esc(o.obligation)}</span> <span class="small">${esc(o.observed ?? o.reason ?? "")}${o.required ? " · required " + esc(o.required) : ""}</span>`).join("<br/>")
           : esc(a.kind) + (a.reason ? ` — ${esc(a.reason)}` : "");
-        return `<tr class="${refused ? "obl-refused" : ""}"><td>${esc(a.at?.replace("T", " ").slice(0, 19) ?? "")}</td><td>${esc(a.guaranteeId ?? "—")}</td><td>${detail}</td></tr>`;
+        return `<tr class="${refused ? "obl-refused" : ""}"><td>${esc(fmt(a.at))}</td><td>${esc(a.guaranteeId ?? "—")}</td><td>${detail}</td></tr>`;
       }).join("");
       document.getElementById("audit-table").innerHTML = `<table><thead><tr><th>Time</th><th>Guarantee</th><th>Record</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
+
+    // ---- demo reset ---------------------------------------------------------
+    document.getElementById("seed-reset").onclick = async () => {
+      const btn = document.getElementById("seed-reset");
+      btn.disabled = true; btn.textContent = "Reseeding…";
+      await j("/api/demo/seed", { method: "POST", body: "{}" });
+      btn.disabled = false; btn.textContent = "Reset demo data";
+      loadGuarantees();
+    };
 
     // boot: show the enforced hero receipt
     document.getElementById("buyer-id").value = "g_0001";
