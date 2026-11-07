@@ -8,6 +8,7 @@
   "main": "worker/entry.js",
   "compatibility_date": "2026-10-15",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": { "PROMISEPAY_MODE": "sandbox" },
   "assets": {
     "directory": "./web",
     "binding": "ASSETS",
