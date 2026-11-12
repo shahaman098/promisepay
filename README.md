@@ -4,6 +4,12 @@
 
 Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 2026). PayPal is the execution spine: Orders v2 → capture → **Refund API**, driven by webhook/evidence events. AI (Llama 3.3 70B on Cloudflare Workers AI, live in the deployed demo) is indispensable where a form cannot be: parsing arbitrary promise prose into SLAs and classifying ambiguous evidence (inconclusive ⇒ fail-closed, never pays on a guess).
 
+## Measured parser quality
+
+on a labelled set of 24 promises (13 executable, 11 that must be refused), the live parser (Llama 3.3 70B on Workers AI, plus deterministic guards and validation) got **23/24 right and refused 11/11 unsafe promises: zero false guarantees**. The one miss was a refusal, never a wrong payout. Median end-to-end response 801 ms (LLM-answered cases: median 908 ms, p90 1.5 s), sequential requests, 12 Nov 2026. Reproduce: `npm run eval:parser -- <url>`.
+
+Architecture diagram: [`web/architecture.html`](./web/architecture.html) (served at `/architecture.html`).
+
 ## Design invariants (what makes this hard to fake)
 
 1. **Server-side, fail-closed enforcement.** Money moves only via `POST /api/guarantees/:id/execute-remedy`, which re-checks every proof obligation *at transition time*: amount, currency, transaction identity, evidence references, promise version.

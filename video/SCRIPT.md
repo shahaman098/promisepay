@@ -3,7 +3,7 @@
 Formula: **Problem → Working product → Technical proof → Measured evidence → Memorable close.**
 Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no keys/passwords on screen. Public YouTube, no copyrighted music, no third-party logos.
 
-**Setup (5 min):** open `https://promisepay.kiritokris.workers.dev` full-width. Open a second window with a terminal in `promisepay/server` (font size large) and a third tab with the architecture diagram (README "Layout" or a one-slide sketch: Prose → LLM parser → SLA validator → evidence feed → enforcement spine → PayPal Orders/Refund API → audit record). Click **Reset demo data** first so the state is clean. Confirm the header chip shows the model name (`llama-3.3-70b-instruct-fp8-fast`) — judges must see the AI is live.
+**Setup (5 min):** open `https://promisepay.kiritokris.workers.dev` full-width. Open a second window with a terminal in `promisepay/server` (font size large) and a third tab on `https://promisepay.kiritokris.workers.dev/architecture.html` (the architecture diagram). In the terminal, have `cat eval/results.json | head -30` ready (or rerun `npm run eval:parser -- https://promisepay.kiritokris.workers.dev` after deploy). Click **Reset demo data** first so the state is clean. Confirm the header chip shows the model name (`llama-3.3-70b-instruct-fp8-fast`) — judges must see the AI is live.
 
 ---
 
@@ -22,14 +22,14 @@ Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no 
 4. **(1:35–2:00) Refund.** **Execute remedy**. Point at refund id + `provenance`. *"The refund goes through PayPal's Refund API with an idempotency key. The provenance label says exactly where this data came from."* (Say exactly what the provenance label on screen says: the seeded demo uses labeled `fixture` records, not real sandbox money. Only claim a real sandbox refund if you ran `npm run verify:sandbox` and show its output.)
 
 ## 2:00–2:30 — Engineering
-**On screen:** architecture diagram, then Record tab.
-**Say:** "One technical decision matters most: the model decides *what was promised*; code decides *whether money moves*. Every model output is validated and the evidence feed is pinned by code. Money moves through one server endpoint that re-checks amount, currency, transaction identity, evidence and promise version at transition time, inside a single Cloudflare Durable Object so racing requests can't double-refund."
+**On screen:** `/architecture.html`, then Record tab.
+**Say:** "One technical decision matters most: the model decides *what was promised*; code decides *whether money moves*. Deterministic guards run before the model, and every model output is checked against the source text: a dollar amount must actually be written there, and the evidence feed is chosen by code. Money then passes one gate that re-checks evidence, amount, the capture's order and the promise version at the moment of the transition, inside a single Cloudflare Durable Object, so racing requests can't double-refund."
 **Action:** click **Execute remedy** again → refusal; open **Record** tab, point at persisted refusals.
 
 ## 2:30–2:50 — Evidence (real numbers only)
-**On screen:** terminal running `npm test`.
-**Say:** "Twenty tests pass, including an eight-attack matrix: no evidence, overpaying, a corrupted capture reference, unknown carrier status, stale version, double-execute, PayPal decline. Each is refused with a persisted failed-obligation record; only the genuinely evidenced breach pays."
-(Do not quote accuracy/latency figures you haven't measured.)
+**On screen:** terminal: `eval/results.json` summary, then `npm test` passing.
+**Say:** "We measured the live parser on 24 labelled promises, one request at a time. It got 23 right. All 11 unsafe promises were refused, so zero false guarantees. The one miss was a refusal, not a wrong payout. Median response was under a second. And 20 tests pass, including an eight-attack matrix: no evidence, overpaying, a corrupted capture reference, unknown carrier status, stale version, double-execute, PayPal decline. Every attack is refused and recorded."
+(These are the 12 Nov local measurements: 23/24, 11/11 refused, median 801 ms, LLM median 908 ms, Llama 3.3 70B via Workers AI. If you rerun against the live URL after deploy, say the new numbers instead.)
 
 ## 2:50–3:00 — Close
 **On screen:** live URL + GitHub URL (`github.com/shahaman098/promisepay`).
@@ -38,7 +38,9 @@ Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no 
 ---
 
 ## Checklist before upload
+- [ ] Value clear by 0:15, product working by 0:30
 - [ ] Model name visible on screen at least once; PayPal Refund API + provenance visible
+- [ ] Every number said aloud matches `eval/results.json` or the `npm test` output on screen
 - [ ] Under 3:00, captions checked, nothing sensitive visible
 - [ ] Public YouTube link plays logged-out; paste into SUBMISSION.md and Devpost
 - [ ] Upload early — YouTube processing can take a while

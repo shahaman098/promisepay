@@ -1,0 +1,452 @@
+{
+  "summary": {
+    "measuredAt": "2026-11-12T16:22:19.366Z",
+    "target": "http://localhost:8799",
+    "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "provider": "cloudflare-workers-ai",
+    "cases": 24,
+    "accuracy": 0.9583333333333334,
+    "executableCorrect": "12/13",
+    "unsafeCorrectlyRefused": "11/11",
+    "falseGuarantees": 0,
+    "answeredBy": {
+      "llm": 17,
+      "guard": 5,
+      "fallback": 2
+    },
+    "latencyMs": {
+      "medianAll": 801,
+      "medianLlm": 908,
+      "p90Llm": 1484
+    },
+    "conditions": "sequential HTTP requests, one at a time, temperature 0; latency is end-to-end request time measured by the client"
+  },
+  "rows": [
+    {
+      "text": "2-day delivery or $5 back",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "fixed_amount",
+        "amount": 5,
+        "days": 2
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 908,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 2
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 5
+        }
+      }
+    },
+    {
+      "text": "Delivery in 5 days or $10 back. That's a promise.",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "fixed_amount",
+        "amount": 10,
+        "days": 5
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 1106,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 5
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 10
+        }
+      }
+    },
+    {
+      "text": "Arrives within 3 days or we send you $7",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "fixed_amount",
+        "amount": 7,
+        "days": 3
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 1484,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 3
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 7
+        }
+      }
+    },
+    {
+      "text": "If it isn't at your door in 4 days, you get $15 back",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "fixed_amount",
+        "amount": 15,
+        "days": 4
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 801,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 4
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 15
+        }
+      }
+    },
+    {
+      "text": "Delivered within 7 days or your money back",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "full_refund",
+        "days": 7
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 935,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 7
+        },
+        "remedy": {
+          "type": "full_refund",
+          "amount": null
+        }
+      }
+    },
+    {
+      "text": "Next-day delivery (1 day) or a full refund",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "full_refund",
+        "days": 1
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 693,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 1
+        },
+        "remedy": {
+          "type": "full_refund",
+          "amount": null
+        }
+      }
+    },
+    {
+      "text": "Ships and arrives in 2 days, otherwise $4 credited back to you",
+      "expect": {
+        "kind": "delivery_by",
+        "remedy": "fixed_amount",
+        "amount": 4,
+        "days": 2
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 1076,
+      "got": {
+        "kind": "delivery_by",
+        "verification": {
+          "type": "tracking_timeline",
+          "source": "carrier_feed",
+          "withinDays": 2
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 4
+        }
+      }
+    },
+    {
+      "text": "We will fix it within 24 hours or full refund",
+      "expect": {
+        "kind": "resolution_within",
+        "remedy": "full_refund",
+        "hours": 24
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 1180,
+      "got": {
+        "kind": "resolution_within",
+        "verification": {
+          "type": "status_timeline",
+          "source": "merchant_status_feed",
+          "withinHours": 24
+        },
+        "remedy": {
+          "type": "full_refund",
+          "amount": null
+        }
+      }
+    },
+    {
+      "text": "Repairs completed in 48 hours or $25 back",
+      "expect": {
+        "kind": "resolution_within",
+        "remedy": "fixed_amount",
+        "amount": 25,
+        "hours": 48
+      },
+      "pass": false,
+      "source": "llm",
+      "ms": 716,
+      "got": {
+        "refusal": "no_schedule"
+      }
+    },
+    {
+      "text": "Support ticket resolved within 12 hours or $3 back",
+      "expect": {
+        "kind": "resolution_within",
+        "remedy": "fixed_amount",
+        "amount": 3,
+        "hours": 12
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 611,
+      "got": {
+        "kind": "resolution_within",
+        "verification": {
+          "type": "status_timeline",
+          "source": "merchant_status_feed",
+          "withinHours": 12
+        },
+        "remedy": {
+          "type": "fixed_amount",
+          "amount": 3
+        }
+      }
+    },
+    {
+      "text": "Your laptop repaired within 72 hours or your money back",
+      "expect": {
+        "kind": "resolution_within",
+        "remedy": "full_refund",
+        "hours": 72
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 5072,
+      "got": {
+        "kind": "resolution_within",
+        "verification": {
+          "type": "status_timeline",
+          "source": "merchant_status_feed",
+          "withinHours": 72
+        },
+        "remedy": {
+          "type": "full_refund",
+          "amount": null
+        }
+      }
+    },
+    {
+      "text": "Best price this week or the difference back",
+      "expect": {
+        "kind": "price_match",
+        "remedy": "difference"
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 761,
+      "got": {
+        "kind": "price_match",
+        "verification": {
+          "type": "price_comparison",
+          "source": "merchant_price_feed",
+          "withinDays": 7
+        },
+        "remedy": {
+          "type": "difference",
+          "amount": null
+        }
+      }
+    },
+    {
+      "text": "Find it cheaper elsewhere and we refund the difference",
+      "expect": {
+        "kind": "price_match",
+        "remedy": "difference"
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 596,
+      "got": {
+        "kind": "price_match",
+        "verification": {
+          "type": "price_comparison",
+          "source": "merchant_price_feed"
+        },
+        "remedy": {
+          "type": "difference",
+          "amount": null
+        }
+      }
+    },
+    {
+      "text": "No refunds on sale items",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "guard",
+      "ms": 5,
+      "got": {
+        "refusal": "negated_promise"
+      }
+    },
+    {
+      "text": "This product is non-refundable",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "guard",
+      "ms": 4,
+      "got": {
+        "refusal": "negated_promise"
+      }
+    },
+    {
+      "text": "We don't guarantee delivery times during holidays",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "guard",
+      "ms": 5,
+      "got": {
+        "refusal": "negated_promise"
+      }
+    },
+    {
+      "text": "All sales final",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 929,
+      "got": {
+        "refusal": "no_remedy"
+      }
+    },
+    {
+      "text": "Refunds at our discretion if something goes wrong",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "guard",
+      "ms": 4,
+      "got": {
+        "refusal": "contingent_promise"
+      }
+    },
+    {
+      "text": "We may compensate affected customers",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "guard",
+      "ms": 3,
+      "got": {
+        "refusal": "contingent_promise"
+      }
+    },
+    {
+      "text": "If your order arrives after Friday we'll credit you something nice",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 1013,
+      "got": {
+        "refusal": "no_specific_remedy"
+      }
+    },
+    {
+      "text": "Fast shipping or we'll make it right",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 651,
+      "got": {
+        "refusal": "ambiguous_remedy"
+      }
+    },
+    {
+      "text": "Delivery within 2 days for all orders",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "fallback",
+      "ms": 932,
+      "got": {
+        "refusal": "no_remedy"
+      }
+    },
+    {
+      "text": "We fix things fast",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "llm",
+      "ms": 526,
+      "got": {
+        "refusal": "lack_of_specifics"
+      }
+    },
+    {
+      "text": "Delivered in 3 days or 20% off your next order",
+      "expect": {
+        "refuse": true
+      },
+      "pass": true,
+      "source": "fallback",
+      "ms": 1271,
+      "got": {
+        "refusal": "no_remedy"
+      }
+    }
+  ]
+}

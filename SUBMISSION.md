@@ -10,6 +10,8 @@ Merchants sell promises ("2-day delivery or $5 back"). PromisePay's AI turns eac
 
 > **8/8 attack vectors refused, 0 false refunds.** No evidence, overpay, forged transaction ID, unknown carrier status, stale promise version, double-execute, PayPal decline: each one is refused server-side with a persisted failed-obligation record. Only the genuinely evidenced breach moves money through the PayPal Refund API.
 
+**Measured, not claimed:** on a labelled set of 24 promises (13 executable, 11 that must be refused), the live parser (Llama 3.3 70B on Workers AI, plus deterministic guards and validation) got **23/24 right and refused 11/11 unsafe promises: zero false guarantees**. The one miss was a refusal, never a wrong payout. Median end-to-end response 801 ms (LLM-answered cases: median 908 ms, p90 1.5 s), sequential requests, 12 Nov 2026. Reproduce: `npm run eval:parser -- <url>`.
+
 **The problem:** Small merchants lose money and trust in two directions at once. Buyers hesitate to purchase from stores they don't trust; merchants eat chargebacks, disputes, and manual refund choreography when things go wrong. "Guarantees" today are marketing copy — nothing enforces them.
 
 **The build:** PromisePay turns a merchant's promise, written in plain prose, into an executable contract:
