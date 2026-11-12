@@ -12,6 +12,8 @@ Merchants sell promises ("2-day delivery or $5 back"). PromisePay's AI turns eac
 
 **Measured, not claimed:** on a labelled set of 24 promises (13 executable, 11 that must be refused), the live parser (Llama 3.3 70B on Workers AI, plus deterministic guards and validation) got **23/24 right and refused 11/11 unsafe promises: zero false guarantees**. The one miss was a refusal, never a wrong payout. Median end-to-end response 801 ms (LLM-answered cases: median 908 ms, p90 1.5 s), sequential requests, 12 Nov 2026. Reproduce: `npm run eval:parser -- <url>`.
 
+**Real PayPal sandbox proof (12 Nov 2026, live site):** a $25.00 sandbox order (`120684403P8280439`, capture `79E170979L630542B`) was paid with PayPal's published sandbox test card through the app's own sandbox keys. PromisePay then refunded $5 through the Refund API on the live deployment, both times with provenance `paypal-sandbox`: refunds `44D32886PK488123N` (dry run) and `8A9655367P504605D` (shown in the video). PayPal's refund webhook arrived and passed signature verification (`webhook_accepted` in the record).
+
 **The problem:** Small merchants lose money and trust in two directions at once. Buyers hesitate to purchase from stores they don't trust; merchants eat chargebacks, disputes, and manual refund choreography when things go wrong. "Guarantees" today are marketing copy — nothing enforces them.
 
 **The build:** PromisePay turns a merchant's promise, written in plain prose, into an executable contract:

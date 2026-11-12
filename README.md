@@ -8,7 +8,7 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 
 
 - **Live demo:** https://promisepay.kiritokris.workers.dev (no login, no PayPal account, no keys needed; the UI ships with a demo API key)
   - **Buyer** tab: an enforced promise and its refund receipt. **Merchant** tab: write a promise, *Parse preview*, *Create guarantee*, add evidence, *Evaluate*, *Execute remedy*. **Record** tab: every refusal on the audit trail. *Reset demo data* restores the curated dataset.
-  - Demo ids starting with `OFFLINE-` are labelled `fixture` records (simulated, no money moves). Real sandbox money is shown by `npm run verify:sandbox` below.
+  - Demo ids starting with `OFFLINE-` are labelled `fixture` records (simulated, no money moves). Guarantees linked to a real sandbox order and capture refund real sandbox money (provenance `paypal-sandbox`); see the proof below and in the video.
 - **Demo video (under 3 min):** <YouTube link>
 - **Architecture:** https://promisepay.kiritokris.workers.dev/architecture.html
 - **License:** MIT (see [LICENSE](./LICENSE))
@@ -24,6 +24,8 @@ Small online merchants make promises ("2-day delivery or $5 back") to win buyers
 | **PayPal** | Orders v2 (create, get, capture), Payments **Refund API** with `PayPal-Request-Id` idempotency, capture lookup for identity checks, webhook signature verification (`/v1/notifications/verify-webhook-signature`) | `server/src/paypal.js`, `server/src/enforce.js` |
 | **AI** | **Llama 3.3 70B** (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) on **Cloudflare Workers AI** turns promise prose into a strict JSON contract or refuses it. Deterministic guards run first; every model output is validated against the source text (stated amounts, full-refund wording) before a guarantee exists. Optional: any OpenAI-compatible endpoint via `OPENAI_API_KEY`. | `server/src/ai/parser.js`, `worker/entry.js` |
 | **Evidence verifier** | Rule-based (not AI): breach / no-breach / INCONCLUSIVE, fail-closed | `server/src/ai/verify.js` |
+
+**Real PayPal sandbox proof (12 Nov 2026, live site):** a $25.00 sandbox order (`120684403P8280439`, capture `79E170979L630542B`) was paid with PayPal's published sandbox test card through the app's own sandbox keys. PromisePay then refunded $5 through the Refund API on the live deployment, both times with provenance `paypal-sandbox`: refunds `44D32886PK488123N` (dry run) and `8A9655367P504605D` (shown in the video). PayPal's refund webhook arrived and passed signature verification (`webhook_accepted` in the record).
 
 ## Measured parser quality
 
