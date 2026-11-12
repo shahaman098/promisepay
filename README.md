@@ -2,7 +2,7 @@
 
 **Small online shops promise things like "2-day delivery or $5 back". PromisePay makes those promises execute themselves: AI turns the promise into a contract, evidence decides whether it was broken, and the refund moves through PayPal, or is refused with the reason on record.**
 
-[Live demo](https://promisepay.kiritokris.workers.dev) · [Watch the demo (2:37)](<YouTube link>) · [Architecture](https://promisepay.kiritokris.workers.dev/architecture.html) · [Devpost](https://paypalaihackathon.devpost.com)
+[Live demo](https://promisepay.kiritokris.workers.dev) · [Watch the demo (2:37)](https://www.youtube.com/watch?v=Q96iujRDvLw) · [Architecture](https://promisepay.kiritokris.workers.dev/architecture.html) · [Devpost entry](https://devpost.com/software/simpli)
 
 ![A real PayPal sandbox refund executed by PromisePay: provenance paypal-sandbox](docs/hero.png)
 
