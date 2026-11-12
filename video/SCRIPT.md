@@ -16,10 +16,10 @@ Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no 
 **Say:** "Store guarantees are marketing copy; nothing enforces them. PromisePay turns a merchant's written promise into a contract that executes itself: AI reads it, evidence checks it, PayPal pays it."
 
 ## 0:25–2:00 — Working demo (Merchant tab)
-1. **(0:25–0:50) Prose in, refusal out.** Type `All sales final, no refunds` → **Parse preview**. Point at the model name and the REFUSED JSON. *"The model reads plain prose. A promise it can't execute is refused, so nothing ever moves money on a guess."*
+1. **(0:25–0:50) Prose in, refusal out.** Type `If your order arrives after Friday we'll credit you something nice` → **Parse preview**. Point at `source: llm`, the model name and the REFUSED JSON. *"The model reads plain prose. A promise it can't execute is refused, so nothing ever moves money on a guess."* (Optional engineering aside: obvious negations like "no refunds" are refused by deterministic guards before the model is even asked.)
 2. **(0:50–1:10) Prose → executable SLA.** Type `2-day delivery or $5 back` → **Parse preview** → **Create guarantee**. Point at `delivery_by · withinDays 2 · fixed_amount 5` and "parsed by llama-3.3-70b". *"Window, evidence source, remedy — structured, versioned, live."*
 3. **(1:10–1:35) Evidence → verdict.** Click **＋ exception** (carrier exception) → **Evaluate**. Point at verdict `breach`. *"The carrier feed reports a failure. The verifier returns breach, no-breach, or inconclusive — and inconclusive never pays."*
-4. **(1:35–2:00) Refund.** **Execute remedy**. Point at refund id + `provenance`. *"The refund goes through PayPal's Refund API with an idempotency key. The provenance label says exactly where this data came from."* (If sandbox keys are set, say: "this is a real PayPal sandbox refund." If not, say: "offline fixture mode, labeled as such.")
+4. **(1:35–2:00) Refund.** **Execute remedy**. Point at refund id + `provenance`. *"The refund goes through PayPal's Refund API with an idempotency key. The provenance label says exactly where this data came from."* (Say exactly what the provenance label on screen says: the seeded demo uses labeled `fixture` records, not real sandbox money. Only claim a real sandbox refund if you ran `npm run verify:sandbox` and show its output.)
 
 ## 2:00–2:30 — Engineering
 **On screen:** architecture diagram, then Record tab.
@@ -28,7 +28,7 @@ Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no 
 
 ## 2:30–2:50 — Evidence (real numbers only)
 **On screen:** terminal running `npm test`.
-**Say:** "Twenty tests pass, including an eight-attack matrix: no evidence, overpaying, forged transaction identity, unknown carrier status, stale version, double-execute, PayPal decline. Each is refused with a persisted failed-obligation record; only the genuinely evidenced breach pays."
+**Say:** "Twenty tests pass, including an eight-attack matrix: no evidence, overpaying, a corrupted capture reference, unknown carrier status, stale version, double-execute, PayPal decline. Each is refused with a persisted failed-obligation record; only the genuinely evidenced breach pays."
 (Do not quote accuracy/latency figures you haven't measured.)
 
 ## 2:50–3:00 — Close

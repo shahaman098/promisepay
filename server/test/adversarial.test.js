@@ -113,7 +113,7 @@ test("T6 concurrent executes: exactly one refund lands", async () => {
   assert.equal(store.getGuarantee(id).status, "refunded");
 });
 
-test("T3 wrong transaction identity: capture id mismatching the order is refused", async () => {
+test("T3 corrupted capture reference: a bad capture id never ends in a completed refund", async () => {
   // Craft a guarantee whose payment state references a different order id.
   const id = await mkGuarantee({
     promiseText: "2-day delivery or $5 back",

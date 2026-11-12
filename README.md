@@ -60,7 +60,7 @@ Webhook events: `POST /webhooks/paypal` verifies signatures via `/v1/notificatio
 |---|--------|----------|
 | T1 | No breach evidence at all | refused · `verdict_is_conclusive` persisted |
 | T2 | Promise exceeds captured amount | refused · `remedy_within_captured_amount` |
-| T3 | Corrupted transaction identity | refused · status never becomes `refunded` |
+| T3 | Corrupted capture reference | refused · status never becomes `refunded` |
 | T4 | Unknown carrier status | INCONCLUSIVE ⇒ fail-closed |
 | T5 | Stale promise version (concurrent edit) | refused · `stale_version` |
 | T6 | Two racing executes | exactly one refund (CAS) |

@@ -29,7 +29,10 @@ function amountOf(paymentState) {
 async function gatherPaymentState(guarantee) {
   if (guarantee.payment.captureId) {
     const capture = await paypal.getCapture(guarantee.payment.captureId);
-    return { id: guarantee.orderId, capture, amount: capture.amount, currency: capture.amount?.currency_code, raw: capture };
+    // Sandbox captures report which order they belong to; use it so a guarantee
+    // cannot point at someone else's capture. Offline fixtures echo the order.
+    const id = capture.provenance === "paypal-sandbox" ? (capture.supplementary_data?.related_ids?.order_id ?? null) : guarantee.orderId;
+    return { id, capture, amount: capture.amount, currency: capture.amount?.currency_code, raw: capture };
   }
   const order = await paypal.getOrder(guarantee.orderId);
   return { id: guarantee.orderId, order, amount: order.amount, currency: order.currency, raw: order };
@@ -128,12 +131,23 @@ export async function executeRemedy(guaranteeId, { expectedVersion, requestedBy 
   // All obligations pass — move the money (idempotent per transition).
   const captureId = guaranteeCaptureId(locked);
   const idempotencyKey = `${guaranteeId}:${locked.version}`;
-  const refund = await paypal.refundCapture({
-    captureId,
-    amount: verdict.remedyAmount,
-    currency: currencyOf(paymentState) || "USD",
-    idempotencyKey,
-  });
+  let refund;
+  try {
+    refund = await paypal.refundCapture({
+      captureId,
+      amount: verdict.remedyAmount,
+      currency: currencyOf(paymentState) || "USD",
+      idempotencyKey,
+    });
+  } catch (e) {
+    // Network/OAuth failure: outcome unknown. Release the lock and the version
+    // so a retry reuses the same idempotency key (PayPal will not refund twice).
+    locked.status = priorStatus;
+    locked.version -= 1;
+    store.persist();
+    store.audit({ guaranteeId, kind: "failed_obligations", requestedBy, obligations: [{ obligation: "refund_call_completed", observed: String(e?.message || e), pass: false }], note: "refund call threw; lock released; retry is idempotent" });
+    return { ok: false, refused: true, obligations: [{ obligation: "refund_call_completed", observed: String(e?.message || e), pass: false }] };
+  }
 
   if (refund.ok === false || refund.error) {
     locked.status = "refund_failed";

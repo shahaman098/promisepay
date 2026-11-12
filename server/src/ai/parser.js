@@ -139,6 +139,11 @@ function validLlmOutput(parsed, text = "") {
   if (!parsed.kind || !parsed.verification || !parsed.remedy) return null;
   if (!Object.values(SLA_KINDS).includes(parsed.kind)) return null;
   if (!Object.values(REMEDY_TYPES).includes(parsed.remedy.type)) return null;
+  // A full refund must be stated as such; the model may not escalate a vague
+  // remedy into refunding the whole capture.
+  if (parsed.remedy.type === REMEDY_TYPES.FULL_REFUND && !/money back|full refund|refund (?:the )?(?:full|entire|whole)|entire payment|100\s*%|refund in full|fully refund/i.test(text)) {
+    return { refusal: "full_refund_not_stated", reason: "model proposed a full refund the prose does not state; refusing rather than guessing" };
+  }
   // A fixed remedy must be a positive number that is actually stated in the
   // prose, in dollars (a "20% off" must never become $20).
   if (parsed.remedy.type === REMEDY_TYPES.FIXED_AMOUNT) {
@@ -215,7 +220,7 @@ async function llmParse(text) {
 
 export async function parsePromise(text) {
   const pre = preRefuse(text);
-  if (pre) return { sla: null, refusal: pre, source: "fallback", promiseText: text };
+  if (pre) return { sla: null, refusal: pre, source: "guard", promiseText: text };
   const viaLlm = await llmParse(text);
   if (viaLlm) {
     const { _model: model, ...out } = viaLlm;
