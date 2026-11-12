@@ -44,7 +44,7 @@ console.log("Waiting for approval (polling every 5s, up to 25 min)...");
 let approved = null;
 for (let i = 0; i < 300; i++) {
   await new Promise((r) => setTimeout(r, 5000));
-  approved = await paypal.getOrder(order.id);
+  try { approved = await paypal.getOrder(order.id); } catch (e) { process.stdout.write("!"); continue; } // tolerate transient sandbox errors
   if (approved.status === "APPROVED" || approved.status === "COMPLETED" || approved.status === "VOIDED") break;
   process.stdout.write(".");
 }

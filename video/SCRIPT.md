@@ -1,5 +1,7 @@
 # PromisePay — demo video script (target 2:50, hard cap 3:00 — PayPal hackathon rule: under 3 minutes)
 
+**Rendered video:** `video/promisepay-demo.mp4` (2:40, 1080p, ElevenLabs voiceover). Its exact narration is in `video/promisepay-demo.srt` (upload it to YouTube as captions); the lines below are the recording guide.
+
 Formula: **Problem → Working product → Technical proof → Measured evidence → Memorable close.**
 Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no keys/passwords on screen. Public YouTube, no copyrighted music, no third-party logos.
 

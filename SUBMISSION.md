@@ -24,9 +24,9 @@ Merchants sell promises ("2-day delivery or $5 back"). PromisePay's AI turns eac
 
 **PayPal's role is the spine, not a garnish:** Orders v2 → capture → **Refund API** execution, sandbox-authenticated with per-call provenance (retrieval time + endpoint shown in the UI), webhook events recorded as evidence after signature verification, idempotent refunds keyed via PayPal-Request-Id. A one-command harness (`npm run verify:sandbox`) walks a real $25 sandbox order through the entire loop: create → approve → capture → guarantee → breach → refund.
 
-**AI's role is indispensable, not decorative:** the product's input is unstructured prose (a structured form cannot read it), and its verification judgment handles ambiguity — where it refuses rather than guesses.
+**AI's role is indispensable, not decorative:** the product's input is unstructured prose (a structured form cannot read it), and it refuses prose it cannot turn into an exact contract rather than guessing. The breach decision itself is deliberately rule-based, so money never moves on a model's judgment.
 
-**Why it matters:** enforced promises convert. A store that displays "this promise is enforced by an AI escrow — verified, paid automatically" is making a verifiable claim, not an advertisement. Merchants get disputes that never happen; buyers get trust they can inspect.
+**Why it matters:** enforced promises convert. A store that displays "this promise is executable: checked against evidence, paid automatically" is making a verifiable claim, not an advertisement. Merchants get disputes that never happen; buyers get trust they can inspect.
 
 **Honest scope:** this is a proof of concept on PayPal's sandbox with simulated carrier feeds (clearly labeled `fixture` vs `paypal-sandbox` provenance in the UI). We claim evidence-gated money movement that works end to end — not production settlement finality.
 

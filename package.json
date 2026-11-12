@@ -2,7 +2,7 @@
   "name": "promisepay",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-executing service guarantees on PayPal: merchants sell promises, AI verifies breaches against real evidence, refunds move themselves. PayPal AI Hackathon 2026.",
+  "description": "Self-executing service guarantees on PayPal: merchants sell promises, AI turns them into executable contracts, evidence decides, PayPal refunds move themselves. PayPal AI Hackathon 2026.",
   "license": "MIT",
   "type": "module",
   "workspaces": ["server"],
