@@ -5,6 +5,7 @@
 
 import { matchRoute, apiKeyOk } from "../server/src/routes.js";
 import * as store from "../server/src/store.js";
+import { setAiBinding } from "../server/src/ai/parser.js";
 
 const DO_ID = "promisepay-global"; // one instance for the whole deployment
 
@@ -19,6 +20,8 @@ export class PromisePayDO {
         if (typeof v === "string") process.env[k] ??= v;
       }
     } catch { /* process.env unavailable on exotic runtimes — env passed explicitly */ }
+
+    setAiBinding(env?.AI);
 
     // Load durable state once; this constructor only runs on wake.
     ctx.blockConcurrencyWhile(async () => {

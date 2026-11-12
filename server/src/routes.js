@@ -6,7 +6,7 @@
 
 import * as store from "./store.js";
 import * as paypal from "./paypal.js";
-import { parsePromise } from "./ai/parser.js";
+import { parsePromise, aiMode } from "./ai/parser.js";
 import { evaluateGuarantee, executeRemedy } from "./enforce.js";
 
 // Header getter that works for both plain objects (express req.headers)
@@ -47,12 +47,13 @@ export const routes = [
         promiseText,
         sla: parsed.sla,
         aiSource: parsed.source,
+        aiModel: parsed.model ?? null,
         orderId,
         payment: { captureId: captureId ?? null },
         createdAt: new Date().toISOString(),
       };
       store.putGuarantee(g);
-      store.audit({ guaranteeId: id, kind: "created", aiSource: parsed.source, sla: parsed.sla });
+      store.audit({ guaranteeId: id, kind: "created", aiSource: parsed.source, aiModel: parsed.model ?? null, sla: parsed.sla });
       return ok(g);
     },
   },
@@ -129,7 +130,7 @@ export const routes = [
     method: "GET",
     path: "/api/mode",
     auth: false,
-    handler: (ctx) => ok({ paypalMode: paypal.mode(), ai: ctx.env?.OPENAI_API_KEY ? "llm" : "fallback-parser" }),
+    handler: () => ok({ paypalMode: paypal.mode(), ...aiMode() }),
   },
 
   {

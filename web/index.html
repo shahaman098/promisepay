@@ -275,7 +275,7 @@
 
     // ---- mode chip -------------------------------------------------------
     fetch("/api/mode").then(r => r.json()).then(m => {
-      document.getElementById("modechip").textContent = `paypal ${m.paypalMode} · ai ${m.ai}`;
+      document.getElementById("modechip").textContent = `paypal ${m.paypalMode} · ai ${m.model ? m.model.split("/").pop() : m.ai}`;
     }).catch(() => {});
 
     // ---- buyer ------------------------------------------------------------
@@ -293,7 +293,7 @@
           <div class="row">
             <div class="grow">
               <div style="font-weight:800; font-size:17px; text-transform:uppercase; letter-spacing:-0.01em;">"${esc(g.promiseText)}"</div>
-              <div class="small" style="margin-top:4px;">Guarantee ${esc(g.id)} · parsed by ${esc(g.aiSource)} · order ${esc(g.orderId)}</div>
+              <div class="small" style="margin-top:4px;">Guarantee ${esc(g.id)} · parsed by ${esc(g.aiModel ? g.aiModel.split("/").pop() : g.aiSource)} · order ${esc(g.orderId)}</div>
             </div>
             <span class="badge b-${esc(g.status)}">${esc(g.status)}</span>
           </div>
@@ -340,7 +340,7 @@
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
               <strong style="font-size:15px;">${esc(g.id)}</strong>
               <span class="badge b-${esc(g.status)}">${esc(g.status)}</span>
-              <span class="pill small">v${g.version} · ${esc(g.aiSource)} · ${g.eventCount} evidence · ${g.auditCount} records</span>
+              <span class="pill small">v${g.version} · ${esc(g.aiModel ? "llm" : g.aiSource)} · ${g.eventCount} evidence · ${g.auditCount} records</span>
             </div>
             <div class="small" style="margin-top:4px;">"${esc(g.promiseText)}" → order ${esc(g.orderId)}${g.refund ? ` · <strong style="color:var(--ink)">$${esc(g.refund.amount)} refunded</strong> (${esc(g.refund.id)})` : ""}</div>
           </div>

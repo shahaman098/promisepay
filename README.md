@@ -2,7 +2,7 @@
 
 **Merchants sell promises ("2-day delivery or $5 back", "fixed in 48h or full refund", "best price or the difference"). The AI turns each promise into an executable SLA, verifies the breach against real evidence feeds, and the refund moves itself — or refuses, with every failed proof obligation persisted on the record.**
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 2026). PayPal is the execution spine: Orders v2 → capture → **Refund API**, driven by webhook/evidence events. AI is indispensable where a form cannot be: parsing arbitrary promise prose into SLAs and classifying ambiguous evidence (inconclusive ⇒ fail-closed, never pays on a guess).
+Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 2026). PayPal is the execution spine: Orders v2 → capture → **Refund API**, driven by webhook/evidence events. AI (Llama 3.3 70B on Cloudflare Workers AI, live in the deployed demo) is indispensable where a form cannot be: parsing arbitrary promise prose into SLAs and classifying ambiguous evidence (inconclusive ⇒ fail-closed, never pays on a guess).
 
 ## Design invariants (what makes this hard to fake)
 

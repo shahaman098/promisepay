@@ -97,12 +97,7 @@ export function parseFallback(text) {
   };
 }
 
-async function llmParse(text) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-  const base = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.PROMISEPAY_MODEL || "gpt-4o-mini";
-  const system = [
+const SYSTEM_PROMPT = [
     "You convert merchant service promises into a strict JSON SLA, or refuse.",
     'Output ONLY JSON: {"kind":"delivery_by"|"resolution_within"|"price_match",',
     '"verification":{"type":string,"source":string,"withinDays"?:number,"withinHours"?:number},',
@@ -111,7 +106,69 @@ async function llmParse(text) {
     "Refuse (never guess) when: the text negates a guarantee, the remedy is discretionary,",
     "no timeframe or remedy is stated, or any number would have to be invented.",
     "Never invent numbers that are not implied by the text; use null when absent.",
-  ].join(" ");
+].join(" ");
+
+// Cloudflare Workers AI binding (set by the worker entry). When present it is
+// the primary model path: no external API key needed.
+let aiBinding = null;
+export const WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+export function setAiBinding(b) { aiBinding = b || null; }
+export function aiMode() {
+  if (aiBinding) return { ai: "llm", provider: "cloudflare-workers-ai", model: WORKERS_AI_MODEL };
+  if (process.env.OPENAI_API_KEY) return { ai: "llm", provider: "openai-compatible", model: process.env.PROMISEPAY_MODEL || "gpt-4o-mini" };
+  return { ai: "fallback-parser", provider: null, model: null };
+}
+
+function validLlmOutput(parsed) {
+  if (!parsed || typeof parsed !== "object") return null;
+  if (parsed.refusal) return parsed;
+  if (!parsed.kind || !parsed.verification || !parsed.remedy) return null;
+  if (!Object.values(SLA_KINDS).includes(parsed.kind)) return null;
+  if (!Object.values(REMEDY_TYPES).includes(parsed.remedy.type)) return null;
+  // The model decides WHAT was promised; code decides WHICH evidence feed
+  // checks it. Pin the evidence source per SLA kind so the evaluator never
+  // depends on model-invented feed names.
+  const CANON = {
+    delivery_by: { type: "tracking_timeline", source: "carrier_feed" },
+    resolution_within: { type: "status_timeline", source: "merchant_status_feed" },
+    price_match: { type: "price_comparison", source: "merchant_price_feed" },
+  };
+  const v = parsed.verification || {};
+  const verification = { ...CANON[parsed.kind] };
+  if (v.withinDays != null) verification.withinDays = clampNumber(v.withinDays, null);
+  if (v.withinHours != null) verification.withinHours = clampNumber(v.withinHours, null);
+  if (parsed.kind !== "price_match" && verification.withinDays == null && verification.withinHours == null) {
+    return { refusal: "no_schedule", reason: "model found no evidence window; refusing rather than inventing one" };
+  }
+  return { ...parsed, verification };
+}
+
+function extractJson(out) {
+  if (out && typeof out === "object" && !("response" in out)) return out;
+  const r = out?.response ?? out;
+  if (r && typeof r === "object") return r;
+  const str = String(r ?? "");
+  const m = str.match(/\{[\s\S]*\}/);
+  return m ? JSON.parse(m[0]) : null;
+}
+
+async function llmParse(text) {
+  const system = SYSTEM_PROMPT;
+  if (aiBinding) {
+    try {
+      const out = await aiBinding.run(WORKERS_AI_MODEL, {
+        messages: [{ role: "system", content: system }, { role: "user", content: text }],
+        temperature: 0,
+        max_tokens: 400,
+      });
+      const v = validLlmOutput(extractJson(out));
+      if (v) return { ...v, _model: WORKERS_AI_MODEL };
+    } catch { /* fall through */ }
+  }
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
+  const base = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const model = process.env.PROMISEPAY_MODEL || "gpt-4o-mini";
   try {
     const res = await fetch(`${base}/chat/completions`, {
       method: "POST",
@@ -125,10 +182,8 @@ async function llmParse(text) {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    const parsed = JSON.parse(json.choices[0].message.content);
-    if (parsed.refusal) return parsed;
-    if (!parsed.kind || !parsed.verification || !parsed.remedy) return null;
-    return parsed;
+    const parsed = validLlmOutput(JSON.parse(json.choices[0].message.content));
+    return parsed ? { ...parsed, _model: model } : null;
   } catch {
     return null;
   }
@@ -136,7 +191,10 @@ async function llmParse(text) {
 
 export async function parsePromise(text) {
   const viaLlm = await llmParse(text);
-  if (viaLlm) return { sla: viaLlm.refusal ? null : viaLlm, refusal: viaLlm.refusal ? viaLlm : null, source: "llm", promiseText: text };
+  if (viaLlm) {
+    const { _model: model, ...out } = viaLlm;
+    return { sla: out.refusal ? null : out, refusal: out.refusal ? out : null, source: "llm", model, promiseText: text };
+  }
   const fallback = parseFallback(text);
   if (fallback.refusal) return { sla: null, refusal: fallback, source: "fallback", promiseText: text };
   return { sla: fallback, refusal: null, source: "fallback", promiseText: text };
