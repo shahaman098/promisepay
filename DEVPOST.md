@@ -68,6 +68,13 @@ The second challenge was **double refunds under retries**. We solved it with the
 
 Using AI well in payments means being specific about which part it controls. A language model is excellent at reading messy human promises and should never be the last word on moving money. We also learned that an idempotency key is only as good as its scope: keyed per guarantee alone, a legitimate later refund would have been silently blocked.
 
+## Business model and adoption (proposed)
+
+- **Who pays:** the merchant. PromisePay is a per-guaranteed-order fee (for example $0.10 to $0.25 per order, or a small share of the order value), charged only on orders that carry a guarantee. Small merchants start on a free tier.
+- **Why a merchant adopts it:** an enforced guarantee is a badge shown at PayPal checkout that buyers can trust, refunds stop being a manual chore, and the paid-out amount is capped by the merchant's own promise instead of growing into a dispute.
+- **Distribution:** a PayPal checkout add-on or partner app, so onboarding uses the merchant's existing PayPal account; carrier tracking webhooks are the evidence feed.
+- **Not yet validated:** pricing and conversion impact are hypotheses we would test with a small merchant pilot first.
+
 ## What's next
 
 1. Real carrier tracking webhooks as the evidence feed.
