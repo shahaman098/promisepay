@@ -39,10 +39,10 @@ if (order.provenance === "fixture") {
 const approveLink = order.links?.find((l) => l.rel === "approve")?.href;
 console.log("\n=== 2. APPROVE THE ORDER ===");
 console.log(`Open this link in a browser, log in as the SANDBOX PERSONAL account, and approve:\n  ${approveLink}`);
-console.log("Waiting for approval (polling every 5s, up to 3 min)...");
+console.log("Waiting for approval (polling every 5s, up to 25 min)...");
 
 let approved = null;
-for (let i = 0; i < 36; i++) {
+for (let i = 0; i < 300; i++) {
   await new Promise((r) => setTimeout(r, 5000));
   approved = await paypal.getOrder(order.id);
   if (approved.status === "APPROVED" || approved.status === "COMPLETED" || approved.status === "VOIDED") break;

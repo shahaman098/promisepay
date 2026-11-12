@@ -130,7 +130,8 @@ export async function executeRemedy(guaranteeId, { expectedVersion, requestedBy 
 
   // All obligations pass — move the money (idempotent per transition).
   const captureId = guaranteeCaptureId(locked);
-  const idempotencyKey = `${guaranteeId}:${locked.version}`;
+  // Unique across stores and demo resets (ids like g_0006 repeat), stable across retries.
+  const idempotencyKey = `${guaranteeId}:${captureId ?? "nocap"}:${Date.parse(locked.createdAt) || 0}:${locked.version}`;
   let refund;
   try {
     refund = await paypal.refundCapture({
