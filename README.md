@@ -1,6 +1,6 @@
 # PromisePay — self-executing service guarantees on PayPal
 
-**Merchants sell promises ("2-day delivery or $5 back", "fixed in 48h or full refund", "best price or the difference"). The AI turns each promise into an executable SLA, verifies the breach against real evidence feeds, and the refund moves itself — or refuses, with every failed proof obligation persisted on the record.**
+**Merchants sell promises ("2-day delivery or $5 back", "fixed in 48h or full refund", "best price or the difference"). The AI turns each promise into an executable SLA; rule-based checks verify the breach against evidence feeds, and the refund moves itself through PayPal — or the system refuses, with every failed proof obligation persisted on the record.**
 
 Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 2026). PayPal is the execution spine: Orders v2 → capture → **Refund API**, driven by webhook/evidence events. AI (Llama 3.3 70B on Cloudflare Workers AI, live in the deployed demo) is indispensable where a form cannot be: parsing arbitrary promise prose into exact, validated SLAs, or refusing. The breach decision is rule-based on purpose (inconclusive ⇒ fail-closed, never pays on a guess).
 
