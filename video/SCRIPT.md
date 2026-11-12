@@ -28,7 +28,7 @@ Record in your own voice (safest for the rules). 1080p, 30 fps, captions on, no 
 
 ## 2:30–2:50 — Evidence (real numbers only)
 **On screen:** terminal running `npm test`.
-**Say:** "Seventeen tests pass, including an eight-attack matrix: no evidence, overpaying, forged transaction identity, unknown carrier status, stale version, double-execute, PayPal decline. Each is refused with a persisted failed-obligation record; only the genuinely evidenced breach pays."
+**Say:** "Twenty tests pass, including an eight-attack matrix: no evidence, overpaying, forged transaction identity, unknown carrier status, stale version, double-execute, PayPal decline. Each is refused with a persisted failed-obligation record; only the genuinely evidenced breach pays."
 (Do not quote accuracy/latency figures you haven't measured.)
 
 ## 2:50–3:00 — Close

@@ -5,6 +5,21 @@
 // This mirrors the engine's red-team demand: the classifier must handle omitted
 // claims, unknown statuses, and ambiguity without ever paying on a guess.
 
+// Resolve the payable remedy amount for an SLA. Full refunds resolve to the
+// captured amount (previously they resolved to null and could never execute).
+function payableOf(paymentState) {
+  const n = Number(paymentState?.amount?.value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+function remedyAmountFor(sla, paymentState, delta = null) {
+  switch (sla.remedy?.type) {
+    case "fixed_amount": return sla.remedy.amount;
+    case "full_refund": return payableOf(paymentState);
+    case "difference": return delta;
+    default: return null;
+  }
+}
+
 export function collectEvidence(guarantee, { trackingEvents, paymentState }) {
   const sla = guarantee.sla;
   const result = {
@@ -34,7 +49,7 @@ export function collectEvidence(guarantee, { trackingEvents, paymentState }) {
       }
       result.verdict = "breach";
       result.reason = `delivered in ${days.toFixed(1)}d > ${promisedDays}d`;
-      result.remedyAmount = sla.remedy.type === "fixed_amount" ? sla.remedy.amount : null;
+      result.remedyAmount = remedyAmountFor(sla, paymentState);
       return result;
     }
     if (stalled) {
@@ -42,7 +57,7 @@ export function collectEvidence(guarantee, { trackingEvents, paymentState }) {
       result.checks.push({ obligation: "in_transit_or_better", observed: stalled.type, pass: false });
       result.verdict = "breach";
       result.reason = `carrier exception: ${stalled.detail || stalled.type}`;
-      result.remedyAmount = sla.remedy.type === "fixed_amount" ? sla.remedy.amount : null;
+      result.remedyAmount = remedyAmountFor(sla, paymentState);
       return result;
     }
     result.checks.push({ obligation: "any_tracking_evidence", observed: "none", pass: false });
@@ -58,7 +73,7 @@ export function collectEvidence(guarantee, { trackingEvents, paymentState }) {
       result.checks.push({ obligation: "resolved_within_window", observed: hours.toFixed(1), required, pass: hours <= required });
       result.verdict = hours <= required ? "no_breach" : "breach";
       result.reason = `resolved in ${hours.toFixed(1)}h vs ${required}h`;
-      result.remedyAmount = sla.remedy.type === "fixed_amount" ? sla.remedy.amount : null;
+      result.remedyAmount = remedyAmountFor(sla, paymentState);
       return result;
     }
     result.checks.push({ obligation: "any_resolution_evidence", observed: "none", pass: false });
@@ -73,7 +88,7 @@ export function collectEvidence(guarantee, { trackingEvents, paymentState }) {
       result.checks.push({ obligation: "lower_price_found", observed: observed.detail, pass: false });
       result.verdict = "breach";
       result.reason = "lower price found elsewhere";
-      result.remedyAmount = sla.remedy.type === "difference" ? observed.amountDelta : null;
+      result.remedyAmount = remedyAmountFor(sla, paymentState, observed.amountDelta);
       return result;
     }
     result.checks.push({ obligation: "any_price_evidence", observed: "none", pass: false });

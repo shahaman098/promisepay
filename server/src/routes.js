@@ -158,7 +158,7 @@ export const routes = [
         if (parsed.refusal) return null;
         const id = store.nextGuaranteeId();
         const createdAt = new Date(Date.now() - daysAgo * 86_400_000).toISOString();
-        store.putGuarantee({ id, version: 1, status: "monitored", promiseText: text, sla: parsed.sla, aiSource: parsed.source, orderId, payment: { captureId }, createdAt });
+        store.putGuarantee({ id, version: 1, status: "monitored", promiseText: text, sla: parsed.sla, aiSource: parsed.source, aiModel: parsed.model ?? null, orderId, payment: { captureId }, createdAt });
         for (const e of events) {
           store.addEvent({ guaranteeId: id, eventId: `sd_${id}_${Math.random().toString(36).slice(2, 7)}`, at: new Date(Date.now() - e.daysAgo * 86_400_000).toISOString(), ...e });
         }

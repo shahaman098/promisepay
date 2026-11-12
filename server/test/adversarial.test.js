@@ -13,11 +13,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 process.env.PROMISEPAY_MODE = "offline";
-const dataDir = fs.mkdtempSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "pp-test-"));
+const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "pp-test-"));
 process.env.PROMISEPAY_DATA_DIR = dataDir;
 
 const store = await import("../src/store.js");

@@ -120,7 +120,7 @@ export async function refundCapture({ captureId, amount, currency = "USD", idemp
       "Content-Type": "application/json",
       "PayPal-Request-Id": idempotencyKey, // PayPal's idempotency mechanism
     },
-    body: JSON.stringify(amount ? { amount: { currency_code: currency, value: String(amount) } } : {}),
+    body: JSON.stringify(amount ? { amount: { currency_code: currency, value: Number(amount).toFixed(2) } } : {}),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {

@@ -72,8 +72,23 @@ export async function executeRemedy(guaranteeId, { expectedVersion, requestedBy 
     return refuse(guaranteeId, cas.reason, { requestedBy, expectedVersion, currentVersion: cas.currentVersion ?? null });
   }
   const locked = cas.guarantee;
+  // Hold the guarantee in a non-open state while evaluation/refund is in
+  // flight, so a second request that read the bumped version cannot pass the
+  // gate and double-refund.
+  const priorStatus = locked.status;
+  locked.status = "executing";
 
-  const { verdict, identity, paymentState } = await evaluateGuarantee(guaranteeId);
+  let verdict, identity, paymentState;
+  try {
+    ({ verdict, identity, paymentState } = await evaluateGuarantee(guaranteeId));
+  } catch (e) {
+    // PayPal unreachable etc.: release the lock and the version, record why.
+    locked.status = priorStatus;
+    locked.version -= 1;
+    store.persist();
+    store.audit({ guaranteeId, kind: "failed_obligations", requestedBy, obligations: [{ obligation: "evidence_retrievable", observed: String(e?.message || e), pass: false }], note: "evaluation failed; guarantee state unchanged" });
+    return { ok: false, refused: true, obligations: [{ obligation: "evidence_retrievable", observed: String(e?.message || e), pass: false }] };
+  }
 
   const obligations = [];
   if (identity.ok === false) obligations.push({ obligation: identity.obligation, observed: identity.observed, required: identity.required, pass: false });
@@ -105,6 +120,7 @@ export async function executeRemedy(guaranteeId, { expectedVersion, requestedBy 
     });
     // Roll the CAS bump back by decrementing: the refusal must not consume a version.
     locked.version -= 1;
+    locked.status = priorStatus;
     store.persist();
     return { ok: false, refused: true, obligations };
   }
@@ -128,7 +144,7 @@ export async function executeRemedy(guaranteeId, { expectedVersion, requestedBy 
       requestedBy,
       refundId: refund.id ?? null,
       error: refund.error ?? null,
-      note: "PayPal declined the refund; guarantee remains open with the obligation on record",
+      note: "PayPal declined the refund; guarantee marked refund_failed with the error on record (no automatic retry)",
     });
     return { ok: false, refused: false, refundFailed: true, refund };
   }

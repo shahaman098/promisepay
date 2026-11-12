@@ -33,7 +33,9 @@ const NEGATION_PATTERNS = [
   /\bcannot\s+guarantee\b/,
 ];
 
-export function parseFallback(text) {
+// Deterministic refusal guards. Run BEFORE any model so a model can never
+// talk its way past a negation or a discretionary remedy.
+export function preRefuse(text) {
   const raw = text.trim();
   const t = raw.toLowerCase();
 
@@ -50,6 +52,14 @@ export function parseFallback(text) {
   if (/\bunless\b|\bat our discretion\b|\bcase by case\b|\bwe may\b/.test(t)) {
     return { refusal: "contingent_promise", reason: "remedy depends on discretionary conditions we cannot evidence" };
   }
+  return null;
+}
+
+export function parseFallback(text) {
+  const raw = text.trim();
+  const t = raw.toLowerCase();
+  const pre = preRefuse(text);
+  if (pre) return pre;
 
   const amountMatch = t.match(/(?:\$|usd\s*)(\d+(?:\.\d{1,2})?)/);
   const hoursMatch = t.match(/(\d+)\s*(hour|hr)/);
@@ -88,12 +98,16 @@ export function parseFallback(text) {
   }
   const days = daysMatch ? clampNumber(daysMatch[1], 2) : hoursMatch ? clampNumber(hoursMatch[1], 48) / 24 : 2;
   const fullRefund = /money back|full refund|refund the full|entire payment/.test(t);
+  // Never invent a remedy amount: a partial remedy must state its number.
+  if (!fullRefund && !amountMatch) {
+    return { refusal: "no_remedy_amount", reason: "remedy is not a full refund and states no dollar amount; refusing to invent one" };
+  }
   return {
     kind: SLA_KINDS.DELIVERY_BY,
     verification: { type: "tracking_timeline", source: "carrier_feed", withinDays: days },
     remedy: fullRefund
       ? { type: REMEDY_TYPES.FULL_REFUND, amount: null }
-      : { type: REMEDY_TYPES.FIXED_AMOUNT, amount: amountMatch ? clampNumber(amountMatch[1], 5) : 5 },
+      : { type: REMEDY_TYPES.FIXED_AMOUNT, amount: amountMatch ? clampNumber(amountMatch[1], null) : null },
   };
 }
 
@@ -119,12 +133,22 @@ export function aiMode() {
   return { ai: "fallback-parser", provider: null, model: null };
 }
 
-function validLlmOutput(parsed) {
+function validLlmOutput(parsed, text = "") {
   if (!parsed || typeof parsed !== "object") return null;
   if (parsed.refusal) return parsed;
   if (!parsed.kind || !parsed.verification || !parsed.remedy) return null;
   if (!Object.values(SLA_KINDS).includes(parsed.kind)) return null;
   if (!Object.values(REMEDY_TYPES).includes(parsed.remedy.type)) return null;
+  // A fixed remedy must be a positive number that is actually stated in the
+  // prose, in dollars (a "20% off" must never become $20).
+  if (parsed.remedy.type === REMEDY_TYPES.FIXED_AMOUNT) {
+    const amt = Number(parsed.remedy.amount);
+    const stated = text.match(/(?:\$|usd\s*)\s*(\d+(?:\.\d{1,2})?)|(\d+(?:\.\d{1,2})?)\s*(?:dollars?|usd)\b/gi) || [];
+    const nums = stated.map((m) => Number(m.replace(/[^\d.]/g, "")));
+    if (!Number.isFinite(amt) || amt <= 0 || !nums.includes(amt) || /%|percent/i.test(text)) {
+      return { refusal: "remedy_amount_not_stated", reason: "model proposed a fixed amount that is not a stated dollar figure; refusing rather than inventing one" };
+    }
+  }
   // The model decides WHAT was promised; code decides WHICH evidence feed
   // checks it. Pin the evidence source per SLA kind so the evaluator never
   // depends on model-invented feed names.
@@ -161,7 +185,7 @@ async function llmParse(text) {
         temperature: 0,
         max_tokens: 400,
       });
-      const v = validLlmOutput(extractJson(out));
+      const v = validLlmOutput(extractJson(out), text);
       if (v) return { ...v, _model: WORKERS_AI_MODEL };
     } catch { /* fall through */ }
   }
@@ -182,7 +206,7 @@ async function llmParse(text) {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    const parsed = validLlmOutput(JSON.parse(json.choices[0].message.content));
+    const parsed = validLlmOutput(JSON.parse(json.choices[0].message.content), text);
     return parsed ? { ...parsed, _model: model } : null;
   } catch {
     return null;
@@ -190,6 +214,8 @@ async function llmParse(text) {
 }
 
 export async function parsePromise(text) {
+  const pre = preRefuse(text);
+  if (pre) return { sla: null, refusal: pre, source: "fallback", promiseText: text };
   const viaLlm = await llmParse(text);
   if (viaLlm) {
     const { _model: model, ...out } = viaLlm;
