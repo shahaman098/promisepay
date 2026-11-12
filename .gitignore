@@ -10,3 +10,6 @@ data/
 
 # test scratch dirs
 server/test/pp-*/
+
+# rendered demo video (hosted on YouTube, not in git)
+video/*.mp4

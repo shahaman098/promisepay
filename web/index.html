@@ -388,8 +388,9 @@
       const { body } = await j("/api/audit");
       const rows = [...body].reverse().map(a => {
         const refused = a.kind === "failed_obligations";
+        const obls = a.obligations?.length ? a.obligations : [{ obligation: a.reason || "refused", observed: a.detail?.status ? `status ${a.detail.status}` : (a.note || "") }];
         const detail = refused
-          ? (a.obligations || []).map(o => `<span class="badge b-refused">${esc(o.obligation)}</span> <span class="small">${esc(o.observed ?? o.reason ?? "")}${o.required ? " · required " + esc(o.required) : ""}</span>`).join("<br/>")
+          ? obls.map(o => `<span class="badge b-refused">${esc(o.obligation)}</span> <span class="small">${esc(o.observed ?? o.reason ?? "")}${o.required ? " · required " + esc(o.required) : ""}</span>`).join("<br/>")
           : esc(a.kind) + (a.reason ? ` — ${esc(a.reason)}` : "");
         return `<tr class="${refused ? "obl-refused" : ""}"><td>${esc(fmt(a.at))}</td><td>${esc(a.guaranteeId ?? "—")}</td><td>${detail}</td></tr>`;
       }).join("");
