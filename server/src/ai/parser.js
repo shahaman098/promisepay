@@ -142,7 +142,7 @@ function validLlmOutput(parsed, text = "") {
   // A full refund must be stated as such; the model may not escalate a vague
   // remedy into refunding the whole capture.
   if (parsed.remedy.type === REMEDY_TYPES.FULL_REFUND && !/money back|full refund|refund (?:the )?(?:full|entire|whole)|entire payment|100\s*%|refund in full|fully refund/i.test(text)) {
-    return { refusal: "full_refund_not_stated", reason: "model proposed a full refund the prose does not state; refusing rather than guessing" };
+    return null; // model escalated the remedy: let the strict deterministic parser decide
   }
   // A fixed remedy must be a positive number that is actually stated in the
   // prose, in dollars (a "20% off" must never become $20).
@@ -151,7 +151,7 @@ function validLlmOutput(parsed, text = "") {
     const stated = text.match(/(?:\$|usd\s*)\s*(\d+(?:\.\d{1,2})?)|(\d+(?:\.\d{1,2})?)\s*(?:dollars?|usd)\b/gi) || [];
     const nums = stated.map((m) => Number(m.replace(/[^\d.]/g, "")));
     if (!Number.isFinite(amt) || amt <= 0 || !nums.includes(amt) || /%|percent/i.test(text)) {
-      return { refusal: "remedy_amount_not_stated", reason: "model proposed a fixed amount that is not a stated dollar figure; refusing rather than inventing one" };
+      return null; // amount not stated in dollars: let the strict deterministic parser decide
     }
   }
   // The model decides WHAT was promised; code decides WHICH evidence feed
@@ -167,7 +167,7 @@ function validLlmOutput(parsed, text = "") {
   if (v.withinDays != null) verification.withinDays = clampNumber(v.withinDays, null);
   if (v.withinHours != null) verification.withinHours = clampNumber(v.withinHours, null);
   if (parsed.kind !== "price_match" && verification.withinDays == null && verification.withinHours == null) {
-    return { refusal: "no_schedule", reason: "model found no evidence window; refusing rather than inventing one" };
+    return null; // no window from the model: let the strict deterministic parser decide
   }
   return { ...parsed, verification };
 }

@@ -1,39 +1,39 @@
 1
-00:00:00,000 --> 00:00:07,850
-Nobody filed a claim. The package was late, and the five dollar refund was triggered on its own, with the evidence on record.
+00:00:00,000 --> 00:00:10,680
+Maya runs a small candle shop online. Her promise: two-day delivery, or five dollars back. This order arrived late. Nobody filed a claim, and the refund was triggered on its own.
 
 2
-00:00:08,459 --> 00:00:30,469
-Online shops sell promises, like two-day delivery or five dollars back. For small merchants and their buyers, those promises are just marketing copy. Nothing enforces them. PromisePay turns a merchant's written promise into a contract that executes itself. AI reads the promise, evidence checks it, and PayPal pays it.
+00:00:11,282 --> 00:00:29,952
+Today, promises like Maya's are just marketing copy. Nothing enforces them, so buyers have to complain, and Maya refunds by hand. PromisePay turns her written promise into a contract that executes itself. AI reads the promise, evidence checks it, and PayPal pays it.
 
 3
-00:00:31,071 --> 00:00:50,391
+00:00:30,554 --> 00:00:49,874
 This is the merchant console. The merchant writes a promise in plain English, and Llama 3.3, running on Cloudflare Workers AI, reads it. This one is vague. Something nice? So the model refuses it. A promise that can't be executed never becomes a guarantee, and money never moves on a guess.
 
 4
-00:00:50,995 --> 00:01:07,105
+00:00:50,479 --> 00:01:06,589
 Now a real promise. Two-day delivery, or five dollars back. The model turns it into a structured contract: a two-day window, the carrier feed as evidence, and a fixed five dollar remedy. We create the guarantee, linked to its PayPal order and capture.
 
 5
-00:01:07,708 --> 00:01:21,498
+00:01:07,190 --> 00:01:20,980
 A carrier event arrives. The package was lost in transit. The verifier weighs the evidence and returns: breach. If the evidence were missing or unclear, the answer would be inconclusive, and inconclusive never pays.
 
 6
-00:01:22,102 --> 00:01:38,212
+00:01:21,582 --> 00:01:37,692
 Execute the remedy. Every check passes, so the remedy executes. With live keys, this is a PayPal Refund API call with an idempotency key. This demo record is labelled fixture: simulated, no real money, and the product says so.
 
 7
-00:01:38,813 --> 00:02:02,313
+00:01:38,296 --> 00:02:01,796
 One design decision matters most. The model decides what was promised. Code decides whether money moves. Deterministic guards run before the model, and every output is checked against the source text. Then one gate re-checks the evidence, the amount, the capture's order, and the promise version, at the moment of the transition, inside a single Cloudflare Durable Object.
 
 8
-00:02:02,915 --> 00:02:11,505
+00:02:02,398 --> 00:02:10,988
 So what if someone tries to execute it again? Refused. And the refusal is written to the enforcement record, with every other attempt that failed a check.
 
 9
-00:02:12,108 --> 00:02:33,608
+00:02:11,589 --> 00:02:33,089
 We measured the parser on twenty four labelled promises. It got twenty three right, and refused all eleven unsafe ones. Zero false guarantees. The one miss was a refusal, not a wrong payout. Median response, zero point eight seconds. And twenty tests pass, including an eight attack matrix. Every attack is refused, and recorded.
 
 10
-00:02:34,210 --> 00:02:39,830
+00:02:33,726 --> 00:02:39,346
 A promise was made. The world failed it. The money moved itself. PromisePay, built on PayPal.

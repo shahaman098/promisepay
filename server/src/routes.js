@@ -6,7 +6,7 @@
 
 import * as store from "./store.js";
 import * as paypal from "./paypal.js";
-import { parsePromise, aiMode } from "./ai/parser.js";
+import { parsePromise, parseFallback, aiMode } from "./ai/parser.js";
 import { evaluateGuarantee, executeRemedy } from "./enforce.js";
 
 // Header getter that works for both plain objects (express req.headers)
@@ -154,7 +154,10 @@ export const routes = [
       store.audit({ kind: "demo_reset", note: "demo dataset reseeded" });
 
       const mk = async (text, orderId, captureId, events, daysAgo) => {
-        const parsed = await parsePromise(text);
+        // Curated demo data must be stable: if the model refuses a known-good
+        // promise, use the deterministic parser (labelled as such).
+        let parsed = await parsePromise(text);
+        if (parsed.refusal) { const fb = parseFallback(text); parsed = fb.refusal ? parsed : { sla: fb, refusal: null, source: "fallback", model: null }; }
         if (parsed.refusal) return null;
         const id = store.nextGuaranteeId();
         const createdAt = new Date(Date.now() - daysAgo * 86_400_000).toISOString();
