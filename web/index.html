@@ -8,161 +8,158 @@
   <meta property="og:title" content="PromisePay — promises that pay themselves" />
   <meta property="og:description" content="Self-executing service guarantees on PayPal: AI-parsed promises, evidence-gated refunds, fail-closed enforcement with a persisted record." />
   <meta property="og:type" content="website" />
-  <meta name="theme-color" content="#f4f4ed" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d2ff00'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='800' text-anchor='middle' fill='%23282c20'%3EPP%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/mona-sans@5.3.0/index.min.css" />
+  <meta name="theme-color" content="#001c64" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230070e0'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='28' font-weight='800' text-anchor='middle' fill='%23ffffff'%3EPP%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.1.0/index.min.css" />
   <style>
     :root {
-      --cream: #f4f4ed;
-      --ink: #282c20;
-      --ink-soft: #53544f;
-      --volt: #d2ff00;
-      --line: rgba(40, 44, 32, 0.14);
-      --line-strong: rgba(40, 44, 32, 0.55);
-      --radius-btn: 8px;
+      --pp-navy: #001c64;
+      --pp-blue-dark: #003087;
+      --pp-blue: #0070e0;
+      --pp-sky: #009cde;
+      --pp-yellow: #ffc439;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --ink: #2c2e2f;
+      --ink-soft: #5f6368;
+      --line: #e1e7ec;
+      --line-strong: #c4cdd5;
+      --ok: #0b7a3e; --ok-bg: #e3f6ea;
+      --bad: #b3261e; --bad-bg: #fdeceb;
+      --radius-btn: 999px;
       --radius-card: 16px;
+      --shadow: 0 1px 2px rgba(0,28,100,.06), 0 6px 20px rgba(0,28,100,.06);
       --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
-      margin: 0; background: var(--cream); color: var(--ink);
-      font-family: "Mona Sans Variable", "Mona Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    /* hairline contour decoration, like telemetry traces */
-    .contours { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; }
 
     header {
       position: sticky; top: 0; z-index: 10;
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      padding: 14px 28px; background: color-mix(in srgb, var(--cream) 88%, transparent);
-      backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+      padding: 12px 28px; background: var(--pp-navy); color: #fff;
+      box-shadow: 0 2px 12px rgba(0,28,100,.25);
     }
     @media (max-width: 700px) {
-      header { padding: 12px 16px; }
-      main { padding: 28px 16px 60px; }
+      header { padding: 10px 16px; }
+      main { padding: 24px 16px 56px; }
     }
-    .wordmark { font-weight: 800; font-size: 17px; line-height: 0.92; letter-spacing: 0.02em; text-transform: uppercase; }
-    .wordmark span { display: block; }
+    .wordmark { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+    .wordmark .mark {
+      width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--pp-sky), var(--pp-blue)); color: #fff; font-size: 17px; font-weight: 800;
+    }
+    .wordmark b { color: var(--pp-sky); font-weight: 800; }
     .modechip {
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
-      border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 12px; color: var(--ink-soft);
-      background: transparent;
+      font-size: 12px; font-weight: 600; border-radius: 999px; padding: 6px 14px;
+      color: #d6e4ff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
     }
     header .spacer { flex: 1; }
-    nav { display: flex; gap: 8px; }
+    nav { display: flex; gap: 6px; background: rgba(255,255,255,.08); padding: 4px; border-radius: 999px; }
     nav button {
-      background: transparent; border: 1px solid var(--line-strong); color: var(--ink);
-      font: inherit; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
-      padding: 9px 18px; border-radius: var(--radius-btn); cursor: pointer; transition: all .15s ease;
+      background: transparent; border: 0; color: #d6e4ff; font: inherit; font-size: 14px; font-weight: 600;
+      padding: 8px 20px; border-radius: 999px; cursor: pointer; transition: all .15s ease;
     }
-    nav button:hover { border-color: var(--ink); }
-    nav button.active { background: var(--volt); border-color: var(--volt); color: var(--ink); }
+    nav button:hover { color: #fff; }
+    nav button.active { background: #fff; color: var(--pp-blue-dark); }
 
-    main { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 40px 28px 80px; }
+    main { max-width: 1120px; margin: 0 auto; padding: 40px 28px 72px; }
 
-    .hero { margin: 8px 0 34px; }
+    .hero { margin: 4px 0 28px; }
     .hero h1 {
-      margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em;
-      font-size: clamp(38px, 6vw, 76px); line-height: 0.98; max-width: 20ch;
+      margin: 0; font-weight: 800; letter-spacing: -0.03em;
+      font-size: clamp(34px, 5.4vw, 60px); line-height: 1.05; max-width: 18ch; color: var(--pp-navy);
     }
-    .hero h1 em { font-style: normal; background: var(--volt); padding: 0 10px; border-radius: 10px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-    .hero p { margin: 18px 0 0; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--ink-soft); }
+    .hero h1 em { font-style: normal; color: var(--pp-blue); }
+    .hero p { margin: 16px 0 0; max-width: 64ch; font-size: 17px; line-height: 1.55; color: var(--ink-soft); }
 
     .card {
-      background: var(--cream); border: 1px solid var(--line-strong); border-radius: var(--radius-card);
-      padding: 22px; margin-bottom: 18px; position: relative;
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card);
+      padding: 24px; margin-bottom: 18px; box-shadow: var(--shadow);
     }
     .card h2 {
-      font-size: 12px; margin: 0 0 14px; color: var(--ink-soft);
-      text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700;
+      font-size: 13px; margin: 0 0 14px; color: var(--pp-blue-dark);
+      text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
       display: flex; align-items: center; gap: 10px;
     }
-    .card h2::before { content: ""; width: 22px; height: 2px; background: var(--ink); display: inline-block; }
+    .card h2::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pp-blue); display: inline-block; }
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .grow { flex: 1; min-width: 160px; }
 
     input, textarea {
-      background: transparent; color: var(--ink); border: 1px solid var(--line-strong);
-      border-radius: var(--radius-btn); padding: 12px 14px; font: inherit; font-size: 14px; width: 100%;
+      background: #fff; color: var(--ink); border: 1px solid var(--line-strong);
+      border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 15px; width: 100%;
     }
-    input:focus, textarea:focus { outline: 2px solid var(--volt); outline-offset: 0; border-color: var(--ink); }
+    input::placeholder, textarea::placeholder { color: #8a949c; }
+    input:focus, textarea:focus { outline: 3px solid rgba(0,112,224,.25); outline-offset: 0; border-color: var(--pp-blue); }
     textarea { resize: vertical; min-height: 70px; }
 
     button.act {
-      background: var(--volt); color: var(--ink); border: 1px solid var(--volt);
-      border-radius: var(--radius-btn); padding: 11px 18px; cursor: pointer;
-      font: inherit; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-      transition: transform .1s ease, box-shadow .15s ease;
+      background: var(--pp-blue); color: #fff; border: 1px solid var(--pp-blue);
+      border-radius: var(--radius-btn); padding: 11px 22px; cursor: pointer;
+      font: inherit; font-size: 14px; font-weight: 700;
+      transition: background .15s ease, box-shadow .15s ease;
     }
-    button.act:hover { box-shadow: 0 2px 0 var(--ink); transform: translateY(-1px); }
-    button.act.ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
-    button.act.ghost:hover { border-color: var(--ink); box-shadow: none; transform: none; }
-    button.act:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+    button.act:hover { background: var(--pp-blue-dark); border-color: var(--pp-blue-dark); }
+    button.act.ghost { background: #fff; border: 1px solid var(--pp-blue); color: var(--pp-blue); }
+    button.act.ghost:hover { background: #eef5ff; }
+    button.act:disabled { opacity: 0.45; cursor: default; }
 
     pre {
-      background: var(--ink); color: var(--cream); border-radius: 12px; padding: 16px;
-      overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.55; margin: 12px 0 0;
+      background: var(--pp-navy); color: #dce8ff; border-radius: 12px; padding: 16px;
+      overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; margin: 0;
     }
-    pre .k { color: var(--volt); }
+    pre .k { color: var(--pp-sky); }
 
     .badge {
       display: inline-block; padding: 3px 11px; border-radius: 999px;
-      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+      font-size: 12px; font-weight: 700;
     }
-    .b-monitored { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
-    .b-refunded { background: var(--volt); color: var(--ink); border: 1px solid var(--volt); }
-    .b-refund_failed, .b-refused { background: var(--ink); color: var(--volt); border: 1px solid var(--ink); }
-    .b-created { background: transparent; color: var(--ink-soft); border: 1px dashed var(--line-strong); }
+    .b-monitored { background: #e6f1ff; color: var(--pp-blue-dark); }
+    .b-refunded { background: var(--ok-bg); color: var(--ok); }
+    .b-refund_failed, .b-refused { background: var(--bad-bg); color: var(--bad); }
+    .b-created { background: #eef1f4; color: var(--ink-soft); }
 
-    .kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 16px; font-size: 13.5px; margin: 0; }
-    .kv dt { color: var(--ink-soft); text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; font-weight: 700; padding-top: 2px; }
+    .kv { display: grid; grid-template-columns: 150px 1fr; gap: 8px 16px; font-size: 14.5px; margin: 0; }
+    .kv dt { color: var(--ink-soft); font-size: 13px; font-weight: 600; padding-top: 1px; }
     .kv dd { margin: 0; font-weight: 600; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-family: var(--mono); }
-    th { text-align: left; color: var(--ink-soft); font-weight: 700; padding: 8px; border-bottom: 1px solid var(--line-strong); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.08em; }
-    td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    tr.obl-refused td { background: rgba(40, 44, 32, 0.05); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; font-family: var(--mono); }
+    th { text-align: left; color: var(--ink-soft); font-weight: 700; padding: 10px 8px; border-bottom: 2px solid var(--line); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; font-family: "Inter Variable", system-ui, sans-serif; }
+    td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr.obl-refused td { background: var(--bad-bg); }
 
     .timeline { list-style: none; margin: 0; padding: 0; }
-    .timeline li { display: flex; gap: 12px; padding: 7px 0; font-size: 13px; border-bottom: 1px dashed var(--line); }
+    .timeline li { display: flex; gap: 12px; padding: 9px 0; font-size: 14px; border-bottom: 1px solid var(--line); }
     .timeline li:last-child { border-bottom: 0; }
-    .timeline .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--volt); border: 1.5px solid var(--ink); margin-top: 5px; flex: none; }
+    .timeline .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pp-blue); box-shadow: 0 0 0 4px #e6f1ff; margin-top: 5px; flex: none; }
 
     .hidden { display: none; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
     @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
-    .small { font-size: 12px; color: var(--ink-soft); }
-    .hero-note {
-      background: var(--ink); color: var(--cream); border: 0;
+    .small { font-size: 13px; color: var(--ink-soft); }
+    .hero-note { background: linear-gradient(135deg, var(--pp-blue-dark), var(--pp-blue)); color: #fff; border: 0; }
+    .hero-note h2, .hero-note h2::before { color: #ffd77a; }
+    .hero-note h2::before { background: var(--pp-yellow); }
+    .hero-note .small { color: rgba(255,255,255,.82); }
+    .hero-note .pill-pay {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; background: var(--pp-yellow); color: #111;
+      font-weight: 700; font-size: 14px; padding: 9px 20px; border-radius: 999px;
     }
-    .hero-note .small { color: color-mix(in srgb, var(--cream) 70%, transparent); }
-    .strip {
-      position: relative; z-index: 1; margin-top: 40px;
-      background: var(--volt); color: var(--ink); overflow: hidden; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
+    footer.strip {
+      background: var(--pp-navy); color: #b9c9ef; text-align: center; padding: 22px 16px; font-size: 13px;
     }
-    .strip div {
-      padding: 10px 0; white-space: nowrap; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; font-size: 13px;
-      animation: slide 22s linear infinite; width: max-content;
-    }
-    @keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    .strip span { padding: 0 26px; }
+    footer.strip strong { color: #fff; }
   </style>
 </head>
 <body>
-  <svg class="contours" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <g fill="none" stroke="rgba(40,44,32,0.10)" stroke-width="1.2">
-      <path d="M900,-50 C1120,120 980,260 1220,340 C1420,410 1500,560 1380,720"/>
-      <path d="M980,-80 C1200,110 1080,270 1300,360 C1490,440 1560,590 1440,760"/>
-      <path d="M1060,-110 C1280,100 1180,280 1380,380 C1560,470 1620,620 1500,800"/>
-      <path d="M-60,620 C160,560 240,700 120,820 C40,900 -120,880 -160,960"/>
-      <path d="M-120,560 C140,480 300,660 160,820 C60,930 -180,920 -240,1020"/>
-    </g>
-  </svg>
-
-  <header>
-    <div class="wordmark"><span>Promise</span><span>Pay</span></div>
+    <header>
+    <div class="wordmark"><span class="mark">P</span><span>Promise<b>Pay</b></span></div>
     <div class="spacer"></div>
     <div class="modechip" id="modechip">mode: loading…</div>
     <nav>
@@ -180,9 +177,10 @@
       </div>
 
       <div class="card hero-note">
-        <h2 style="color:var(--volt)">Enforced promise</h2>
+        <h2>Enforced promise</h2>
         <div style="font-size:22px; font-weight:800; letter-spacing:-0.01em;">"2-day delivery or $5 back."</div>
         <p class="small" style="margin:10px 0 0; max-width:70ch;">This store's promises are enforced by an AI escrow: verified against real evidence, paid automatically through PayPal. No forms. No arguments.</p>
+        <span class="pill-pay">Refunds paid through PayPal</span>
       </div>
 
       <div class="card">
@@ -241,10 +239,7 @@
     </section>
   </main>
 
-  <div class="strip" aria-hidden="true"><div>
-    <span>A promise was made</span><span>·</span><span>the world failed it</span><span>·</span><span>the money moved itself</span><span>·</span><span>no forms</span><span>·</span><span>no arguments</span><span>·</span>
-    <span>A promise was made</span><span>·</span><span>the world failed it</span><span>·</span><span>the money moved itself</span><span>·</span><span>no forms</span><span>·</span><span>no arguments</span><span>·</span>
-  </div></div>
+  <footer class="strip">A promise was made · the world failed it · <strong>the money moved itself</strong><br/>Built on the PayPal Orders, Refunds &amp; Webhooks APIs · sandbox demo</footer>
 
   <script type="module">
     const H = { "x-api-key": "dev-key-change-me", "content-type": "application/json" };
@@ -292,7 +287,7 @@
         <div class="card">
           <div class="row">
             <div class="grow">
-              <div style="font-weight:800; font-size:17px; text-transform:uppercase; letter-spacing:-0.01em;">"${esc(g.promiseText)}"</div>
+              <div style="font-weight:800; font-size:19px; letter-spacing:-0.01em; color:var(--pp-navy);">"${esc(g.promiseText)}"</div>
               <div class="small" style="margin-top:4px;">Guarantee ${esc(g.id)} · parsed by ${esc(g.aiModel ? g.aiModel.split("/").pop() : g.aiSource)} · order ${esc(g.orderId)}</div>
             </div>
             <span class="badge b-${esc(g.status)}">${esc(g.status)}</span>
