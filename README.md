@@ -1,6 +1,6 @@
 # PromisePay
 
-**Small online shops promise things like "2-day delivery or $5 back". PromisePay makes those promises execute themselves: AI turns the promise into a contract, evidence decides whether it was broken, and the refund moves through PayPal, or is refused with the reason on record.**
+**PromisePay helps small online merchants keep promises like "2-day delivery or $5 back" by turning the promise into a contract that checks the evidence and refunds through PayPal automatically, without a complaint or a dispute.**
 
 [Live demo](https://promisepay.kiritokris.workers.dev) · [Watch the demo (2:37)](https://www.youtube.com/watch?v=Q96iujRDvLw) · [Architecture](https://promisepay.kiritokris.workers.dev/architecture.html) · [Devpost entry](https://devpost.com/software/simpli)
 
@@ -117,7 +117,7 @@ The model decides **what was promised**; code decides **whether money moves**. M
 
 ![Real evaluation and test output](docs/evidence.png)
 
-**Real PayPal sandbox proof (12 Nov 2026, live site):** a $25.00 sandbox order (`120684403P8280439`, capture `79E170979L630542B`) was paid with PayPal's published sandbox test card through the app's own sandbox keys. PromisePay refunded $5 through the Refund API on the live deployment, both times with provenance `paypal-sandbox`: refunds `44D32886PK488123N` (dry run) and `8A9655367P504605D` (shown in the video). PayPal's refund webhook arrived and passed signature verification (`webhook_accepted` in the record).
+**Real PayPal sandbox proof (12 Nov 2026, live site):** a $25.00 sandbox order (`120684403P8280439`, capture `79E170979L630542B`) was paid with PayPal's published sandbox test card through the app's own sandbox keys. PromisePay refunded $5 through the Refund API on the live deployment, both times with provenance `paypal-sandbox`: refunds `44D32886PK488123N`, `8A9655367P504605D` and `83H427093D801213B` (shown in the video). PayPal's refund webhook arrived and passed signature verification (`webhook_accepted` in the record).
 
 **The adversarial matrix** (`server/test/adversarial.test.js`):
 
