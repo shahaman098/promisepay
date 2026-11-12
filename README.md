@@ -1,114 +1,212 @@
-# PromisePay — self-executing service guarantees on PayPal
+# PromisePay
 
-**Merchants sell promises ("2-day delivery or $5 back", "fixed in 48h or full refund", "best price or the difference"). The AI turns each promise into an executable SLA; rule-based checks verify the breach against evidence feeds, and the refund moves itself through PayPal — or the system refuses, with every failed proof obligation persisted on the record.**
+**Small online shops promise things like "2-day delivery or $5 back". PromisePay makes those promises execute themselves: AI turns the promise into a contract, evidence decides whether it was broken, and the refund moves through PayPal, or is refused with the reason on record.**
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 2026). PayPal is the execution spine: Orders v2 → capture → **Refund API**, driven by webhook/evidence events. AI (Llama 3.3 70B on Cloudflare Workers AI, live in the deployed demo) is indispensable where a form cannot be: parsing arbitrary promise prose into exact, validated SLAs, or refusing. The breach decision is rule-based on purpose (inconclusive ⇒ fail-closed, never pays on a guess).
+[Live demo](https://promisepay.kiritokris.workers.dev) · [Watch the demo (2:37)](<YouTube link>) · [Architecture](https://promisepay.kiritokris.workers.dev/architecture.html) · [Devpost](https://paypalaihackathon.devpost.com)
 
-## Try it in 60 seconds (judges)
+![A real PayPal sandbox refund executed by PromisePay: provenance paypal-sandbox](docs/hero.png)
 
-- **Live demo:** https://promisepay.kiritokris.workers.dev (no login, no PayPal account, no keys needed; the UI ships with a demo API key)
-  - **Buyer** tab: an enforced promise and its refund receipt. **Merchant** tab: write a promise, *Parse preview*, *Create guarantee*, add evidence, *Evaluate*, *Execute remedy*. **Record** tab: every refusal on the audit trail. *Reset demo data* restores the curated dataset.
-  - Demo ids starting with `OFFLINE-` are labelled `fixture` records (simulated, no money moves). Guarantees linked to a real sandbox order and capture refund real sandbox money (provenance `paypal-sandbox`); see the proof below and in the video.
-- **Demo video (under 3 min):** <YouTube link>
-- **Architecture:** https://promisepay.kiritokris.workers.dev/architecture.html
-- **License:** MIT (see [LICENSE](./LICENSE))
+> Built for the **PayPal AI Hackathon 2026** ("Build what's next with PayPal and AI"). Prize focus: Best Use of PayPal + AI.
 
-## Who it's for and why it matters
+## The problem
 
-Small online merchants make promises ("2-day delivery or $5 back") to win buyers' trust, but nothing enforces them: buyers have to complain, merchants handle refunds by hand, and disputes follow. PromisePay makes the promise itself executable. The buyer gets the remedy without filing anything; the merchant gets fewer disputes and a guarantee they can prove they honour.
+Maya runs a small candle shop online. Her promise, "2-day delivery or $5 back", wins buyers' trust, but nothing enforces it. When a parcel is late, the buyer has to notice and complain, Maya checks tracking and refunds by hand, and the cases she misses become disputes.
 
-## How PayPal and AI are used
+Today a store guarantee is marketing copy. Refund tooling exists (PayPal's Refund API, dispute flows), but nothing connects **what the merchant promised** to **what actually happened** and **the money**, automatically and safely.
 
-| | What | Where in the code |
+## Our solution
+
+The merchant writes the promise in plain English. PromisePay:
+
+1. **Reads it.** Llama 3.3 70B on Cloudflare Workers AI turns the prose into a strict contract (window, evidence source, remedy), or refuses prose it can't execute ("we'll credit you something nice").
+2. **Watches the evidence.** Carrier and status events attach to the guarantee.
+3. **Decides with code, not the model.** A rule-based verifier returns breach, no breach, or INCONCLUSIVE. Inconclusive never pays.
+4. **Pays through PayPal.** One server-side gate re-checks every condition at the moment of the transition, then calls the PayPal Refund API with an idempotency key. Anything it can't prove is refused and written to the record.
+
+### What makes it different
+
+The model decides **what was promised**; code decides **whether money moves**. Most AI-payment projects let a model trigger a payment. PromisePay treats model output as untrusted: deterministic guards run before the model, every output is checked against the source text (a dollar amount must actually be written there), and the payout gate does not consult the model at all.
+
+## See it in action
+
+**Live:** https://promisepay.kiritokris.workers.dev (no login, no PayPal account, no keys; the page ships with a demo API key)
+
+1. **Buyer** tab: Maya's enforced promise and its refund receipt.
+2. **Merchant** tab: type a promise → **Parse preview** (shows the model and the contract, or the refusal) → **Create guarantee** → **＋ exception** (carrier event) → **Evaluate** (verdict `breach`) → **Execute remedy**.
+3. Click **Execute remedy** again: refused (`transition_not_permitted`).
+4. **Record** tab: every refusal persisted with the failed check.
+
+**Expected outcome:** a refund record with `status: COMPLETED`, an idempotency key and a provenance label. Demo ids starting with `OFFLINE-` are labelled `fixture` (simulated, no money moves); a guarantee linked to a real sandbox order and capture refunds real sandbox money and is labelled `paypal-sandbox`. **Reset demo data** restores the curated dataset.
+
+## Key features
+
+**1. Prose → executable contract, or a refusal**
+- What: any promise text becomes `{kind, verification, remedy}` JSON, or a refusal with a reason.
+- Why: merchants write promises in words, not forms; unexecutable promises must never become guarantees.
+- Evidence: `server/src/ai/parser.js`; 24-case live evaluation below (11/11 unsafe promises refused).
+
+**2. Fail-closed enforcement gate**
+- What: money moves only via `POST /api/guarantees/:id/execute-remedy`, which re-checks evidence, amount ≤ captured, currency, the capture's order (from PayPal), and the promise version.
+- Why: a wrong refund is worse than no refund.
+- Evidence: `server/src/enforce.js`; the 8-attack test matrix below.
+
+**3. Real PayPal money movement with provenance**
+- What: Orders v2, capture lookup, Refund API with `PayPal-Request-Id`, signature-verified webhooks. Every record says where its data came from (`paypal-sandbox` + retrieval time, or `fixture`).
+- Why: judges and merchants can tell real money from simulation at a glance.
+- Evidence: `server/src/paypal.js`; the sandbox proof below.
+
+**4. Concurrency-safe, one refund per breach**
+- What: compare-and-swap on the promise version plus an `executing` lock, inside one Cloudflare Durable Object.
+- Why: double-clicks, retries and racing requests must never double-pay.
+- Evidence: tests T5, T6 and the in-flight regression test.
+
+**5. Enforcement record**
+- What: every refusal is persisted with the failed check and what was observed.
+- Why: the merchant can prove which promises were honoured and why others weren't paid.
+- Evidence: **Record** tab; `store.audit` calls in `enforce.js`.
+
+## How it works
+
+![Architecture: guards and LLM parser feed a validated contract; evidence feeds the verifier; one enforcement gate in a Durable Object calls the PayPal Refund API or writes a refusal](docs/architecture.png)
+
+1. **Input and validation:** deterministic guards (negation, discretionary remedies) → LLM parser → validator (stated amounts, full-refund wording, evidence feed pinned by SLA kind). Unexecutable prose returns 422 and no guarantee.
+2. **Core processing:** evidence events → rule-based verifier → enforcement gate (re-checks at transition time).
+3. **Storage and integrations:** state and audit trail in a single Durable Object; PayPal Orders v2, Payments (captures, refunds) and webhook verification.
+4. **Output:** refund record with provenance, or a persisted refusal; buyer receipt and merchant console.
+
+### Technology stack
+
+| Layer | Technology | Why |
 |---|---|---|
-| **PayPal** | Orders v2 (create, get, capture), Payments **Refund API** with `PayPal-Request-Id` idempotency, capture lookup for identity checks, webhook signature verification (`/v1/notifications/verify-webhook-signature`) | `server/src/paypal.js`, `server/src/enforce.js` |
-| **AI** | **Llama 3.3 70B** (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) on **Cloudflare Workers AI** turns promise prose into a strict JSON contract or refuses it. Deterministic guards run first; every model output is validated against the source text (stated amounts, full-refund wording) before a guarantee exists. Optional: any OpenAI-compatible endpoint via `OPENAI_API_KEY`. | `server/src/ai/parser.js`, `worker/entry.js` |
-| **Evidence verifier** | Rule-based (not AI): breach / no-breach / INCONCLUSIVE, fail-closed | `server/src/ai/verify.js` |
+| Frontend | Zero-build HTML/JS served as Workers Static Assets | One URL for UI and API; nothing to install for judges |
+| Backend | One route table, two runtimes: Cloudflare Worker + Durable Object (live), Express (local/tests) | Same code path in tests and production |
+| AI | Llama 3.3 70B (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) on Cloudflare Workers AI; optional OpenAI-compatible endpoint | No external key needed in the deployment; temperature 0 |
+| Payments | PayPal Orders v2, Payments Refund API, Webhooks (sandbox) | The money movement is PayPal's, end to end |
+| Storage | Durable Object storage (live), JSON file (local) | Serialized writes make the compare-and-swap real |
 
-**Real PayPal sandbox proof (12 Nov 2026, live site):** a $25.00 sandbox order (`120684403P8280439`, capture `79E170979L630542B`) was paid with PayPal's published sandbox test card through the app's own sandbox keys. PromisePay then refunded $5 through the Refund API on the live deployment, both times with provenance `paypal-sandbox`: refunds `44D32886PK488123N` (dry run) and `8A9655367P504605D` (shown in the video). PayPal's refund webhook arrived and passed signature verification (`webhook_accepted` in the record).
+### Technical decisions
 
-## Measured parser quality
+- **Rule-based verifier, not an AI one.** The breach decision moves money, so it is deterministic and testable. AI is used where a form can't work: reading free-text promises.
+- **Model failures fall back to a strict parser, never to a guess.** If the model's output fails validation, a deterministic parser decides; it refuses anything without an explicit window and amount.
+- **Single Durable Object.** Every request serializes through one instance, which makes the version check and the `executing` lock genuinely atomic. Trade-off: throughput is bounded by one object, fine for a merchant-scale proof of concept.
 
-On a labelled set of 24 promises (13 executable, 11 that must be refused), the live parser (Llama 3.3 70B on Workers AI, plus deterministic guards and validation) got **23/24 right and refused 11/11 unsafe promises: zero false guarantees**. The one miss was a refusal, never a wrong payout. Median end-to-end response 801 ms (LLM-answered cases: median 908 ms, p90 1.5 s), sequential requests, 12 Nov 2026. Reproduce: `npm run eval:parser -- <url>`.
+## Innovation and hackathon alignment
 
-Architecture diagram: [`web/architecture.html`](./web/architecture.html) (served at `/architecture.html`).
+- **Rule: "meaningfully use both PayPal and AI".** PayPal is the execution layer (capture lookup, Refund API, webhooks); AI is the only way the product reads its input. Remove either and the product does not exist.
+- **Novel contribution:** connecting a merchant's own words to evidence and to an automatic, auditable refund. Our field scan of ~1,200 public hackathon repos found agent firewalls, dispute copilots and escrow tools, but no other self-executing service guarantees.
+- **Judging criteria → evidence:**
 
-## Design invariants (what makes this hard to fake)
+| Criterion | Where to look |
+|---|---|
+| Technological implementation | Enforcement gate, attack matrix, real sandbox refund |
+| Design | Live demo, buyer receipt + merchant console + record |
+| Potential impact | The problem above: fewer disputes, no manual refunds, provable guarantees |
+| Innovation | "What makes it different" |
+| Presentation | Demo video (2:37) |
 
-1. **Server-side, fail-closed enforcement.** Money moves only via `POST /api/guarantees/:id/execute-remedy`, which re-checks every proof obligation *at transition time*: amount, currency, transaction identity, evidence references, promise version.
-2. **Absence of evidence never pays.** Unknown/inconclusive status ⇒ refused with a persisted `failed_obligations` audit record.
-3. **Optimistic concurrency.** Stale promise versions and racing executes are rejected (compare-and-swap); exactly one refund lands.
-4. **Provenance discipline.** Every payment record carries its provenance (`paypal-sandbox` + retrieval time, or `fixture`) — we never claim sandbox data where there is none.
-5. **Idempotent refunds.** PayPal-Request-Id keyed per transition.
+## Results and validation
 
-## Run it (offline mode — no PayPal account needed)
+| Metric | Result | Evidence |
+|---|---|---|
+| Parser accuracy, 24 labelled promises (13 executable, 11 unsafe) | **23/24** correct | `server/eval/results.json`, `npm --workspace server run eval:parser -- <url>` |
+| Unsafe promises turned into guarantees | **0** (11/11 refused) | same |
+| The one miss | Model omitted a 48 h window → refused; a refusal, not a wrong payout | same |
+| Median response | **801 ms** overall, 908 ms when the model answered (p90 1.5 s) | sequential requests, temperature 0, 12 Nov 2026 |
+| Automated tests | **20/20** pass | `npm test` |
+| Real PayPal sandbox refund | **COMPLETED**, provenance `paypal-sandbox` | below |
 
-```bash
-# requires Node 22+
-npm install
-npm run seed    # two demo guarantees: one breached → refund; one inconclusive → refused
-npm start       # http://localhost:8787 — buyer view + merchant console served from the API itself
-npm test        # 20 tests: adversarial matrix + parser eval corpus + API contract + audit regressions
-```
+![Real evaluation and test output](docs/evidence.png)
 
-## Deploy (Cloudflare Workers — live demo)
+**Real PayPal sandbox proof (12 Nov 2026, live site):** a $25.00 sandbox order (`120684403P8280439`, capture `79E170979L630542B`) was paid with PayPal's published sandbox test card through the app's own sandbox keys. PromisePay refunded $5 through the Refund API on the live deployment, both times with provenance `paypal-sandbox`: refunds `44D32886PK488123N` (dry run) and `8A9655367P504605D` (shown in the video). PayPal's refund webhook arrived and passed signature verification (`webhook_accepted` in the record).
 
-Deployed with `npx wrangler deploy` → **https://promisepay.kiritokris.workers.dev**
+**The adversarial matrix** (`server/test/adversarial.test.js`):
 
-- The API runs inside a single **Durable Object** (`PromisePayDO`): every request serializes through it, state persists in DO storage, and the enforcement CAS is honored across the fleet of one.
-- The demo UI ships via **Workers Static Assets**; `/api/*` and `/webhooks/*` are routed to the worker first (`run_worker_first`).
-- Without PayPal secrets the worker runs in offline (fixture) mode with honest provenance labels. To flip it to real sandbox money:
-  ```bash
-  npx wrangler secret put PAYPAL_CLIENT_ID
-  npx wrangler secret put PAYPAL_CLIENT_SECRET
-  npx wrangler secret put PAYPAL_WEBHOOK_ID
-  ```
-- Demo build note: the API-key gate exists but ships with the demo default key so judges can run the UI; rotate `PROMISEPAY_API_KEY` for any real deployment.
-
-## Go-live checklist (flip the deployed demo to real sandbox money)
-
-1. `npx wrangler secret put PAYPAL_CLIENT_ID` — then `PAYPAL_CLIENT_SECRET`, then `PAYPAL_WEBHOOK_ID` (from developer.paypal.com → Apps & Credentials → Sandbox; webhook id appears after creating a webhook)
-2. Create a webhook in the PayPal developer dashboard pointing to `https://promisepay.kiritokris.workers.dev/webhooks/paypal`, subscribed to `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.DECLINED`
-3. Redeploy (`npx wrangler deploy`) — `/api/mode` now reports `paypalMode: sandbox`
-4. Run `npm run verify:sandbox` locally with the same keys to prove the loop before judging
-5. Record the demo video with [`video/SCRIPT.md`](./video/SCRIPT.md); paste the YouTube URL into [`SUBMISSION.md`](./SUBMISSION.md) and submit on Devpost
-
-## Run it against the real sandbox
-
-```bash
-cp .env.example .env   # fill PAYPAL_CLIENT_ID / SECRET from developer.paypal.com, set PROMISEPAY_MODE=sandbox
-npm run verify:sandbox
-```
-
-The harness walks a **real** sandbox dollar end to end: creates a $25 order (Orders v2) → prints the buyer approval link (approve as the sandbox personal account) → captures → creates a guarantee from promise prose → ingests a carrier exception → evaluates → executes the remedy → re-reads the capture from the sandbox and shows the refund on it. Every step prints its provenance (`paypal-sandbox` + retrieval time).
-
-Webhook events: `POST /webhooks/paypal` verifies signatures via `/v1/notifications/verify-webhook-signature` in sandbox mode. Decline simulation: `PayPal-Mock-Response: INSTRUMENT_DECLINED` (offline sentinel: capture id `OFFLINE-DECLINE`).
-
-## The adversarial matrix (tests = red-team checklist)
-
-| # | Attack | Behavior |
-|---|--------|----------|
+| # | Attack | Behaviour |
+|---|---|---|
 | T1 | No breach evidence at all | refused · `verdict_is_conclusive` persisted |
 | T2 | Promise exceeds captured amount | refused · `remedy_within_captured_amount` |
-| T3 | Corrupted capture reference | refused · status never becomes `refunded` |
+| T3 | Corrupted capture reference | never ends in a completed refund |
 | T4 | Unknown carrier status | INCONCLUSIVE ⇒ fail-closed |
 | T5 | Stale promise version (concurrent edit) | refused · `stale_version` |
-| T6 | Two racing executes | exactly one refund (CAS) |
+| T6 | Two racing executes | exactly one refund |
 | T7 | Genuine evidenced breach | refund executes · `refunded` |
-| T8 | PayPal declines the refund | `refund_failed` + obligation on record, state stays open |
+| T8 | PayPal declines the refund | `refund_failed` with the error on record |
 
-## Demo video
+## Getting started
 
-Shot list and narration: [`video/SCRIPT.md`](./video/SCRIPT.md).
+**Prerequisites:** Node.js 22+. No accounts or keys needed for offline mode.
 
-## Honest scope statement (per rules: documented, no overclaims)
-
-Fixture-level enforcement in offline mode; sandbox-real refunds in sandbox mode; carrier feeds are simulated events. We claim a working proof of concept of evidence-gated money movement — not production settlement finality, not dispute resolution.
-
-## Layout
-
+```bash
+npm install
+npm test        # 20 tests
+npm run seed    # demo data: one breached guarantee, one still inside its window
+npm start       # http://localhost:8787 (UI + API)
 ```
-server/   express API + enforcement spine + PayPal layer + AI parser/verifier + tests
-web/      zero-build demo UI (consumer badge + merchant console)
-data/     JSON store + audit trail (gitignored)
+
+Offline mode uses the deterministic parser and labelled `fixture` PayPal records, so everything runs without credentials.
+
+**Environment variables** (`cp .env.example .env`, never commit `.env`):
+
+| Variable | Purpose |
+|---|---|
+| `PROMISEPAY_MODE` | `offline` (default) or `sandbox` |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | PayPal sandbox app (developer.paypal.com → Apps & Credentials) |
+| `PAYPAL_WEBHOOK_ID` | Webhook signature verification |
+| `PROMISEPAY_API_KEY` | API key for write endpoints (demo default `dev-key-change-me`) |
+| `OPENAI_API_KEY`, `PROMISEPAY_MODEL` | Optional LLM path outside Cloudflare |
+
+**Verify against the real sandbox:**
+
+```bash
+npm run verify:sandbox   # creates a $25 sandbox order, waits for buyer approval, captures, refunds $5, re-reads the capture
 ```
+
+**Deploy (Cloudflare Workers):**
+
+```bash
+npx wrangler secret put PAYPAL_CLIENT_ID      # then PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID
+npx wrangler deploy
+```
+
+The Workers AI binding (`AI`) provides the model; no model key is needed. Point a PayPal sandbox webhook at `/webhooks/paypal` (`PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, `PAYMENT.CAPTURE.DECLINED`).
+
+## Challenges and engineering trade-offs
+
+**Challenge 1: the model must never be able to move money on a guess.**
+**Resolution:** guards before the model, validation after it (amounts must appear in the text, a "20% off" can't become $20, full refunds need full-refund wording), evidence feeds chosen by code, and a payout gate that ignores the model entirely.
+
+**Challenge 2: double refunds under retries and races.**
+**Resolution:** version compare-and-swap plus an `executing` lock, all inside one Durable Object; idempotency keys unique per guarantee, capture and creation time, so a retry reuses the same key and PayPal won't refund twice.
+
+**Challenge 3: an honest demo.**
+**Resolution:** every PayPal record carries provenance. Demo ids are always served as labelled fixtures, real sandbox ids hit PayPal, and the UI and video say which is which.
+
+## Current limitations
+
+- Carrier and status feeds are simulated events in the demo; there is no live carrier integration yet.
+- The demo API key is public so judges can use the UI; anyone can reset the demo data.
+- The delivery window is measured from guarantee creation, not the order timestamp.
+- The deterministic fallback assumes a 2-day window for "delivered on time" promises.
+- Webhook events are not de-duplicated by event id; a declined refund (`refund_failed`) has no automatic retry.
+- Sandbox only; not production settlement or dispute resolution.
+
+## What's next
+
+1. Real carrier tracking webhooks (e.g. a shipping aggregator) as the evidence feed.
+2. Merchant onboarding with PayPal (per-merchant credentials) and a buyer-facing trust badge on checkout.
+3. Retry and dispute hand-off for declined refunds; webhook de-duplication.
+
+## Team and contributions
+
+Aman Kumar Sah: product, engineering, demo.
+
+## Credits and disclosures
+
+- **AI model:** Llama 3.3 70B via Cloudflare Workers AI (runtime promise parsing).
+- **Demo video voiceover:** ElevenLabs text-to-speech; the footage is a real screen capture of the live site.
+- **Fonts:** Inter (via jsDelivr/Fontsource). No PayPal logos are used; PayPal is named as the payment provider.
+- **Dependencies:** Express, Wrangler.
+
+## Licence
+
+MIT, see [LICENSE](./LICENSE).
