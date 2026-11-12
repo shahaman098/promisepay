@@ -10,7 +10,15 @@
 // IMPORTANT (hackathon rules): credentials live in env vars only, never in code.
 
 const API_BASE = process.env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com";
-const MODE = (process.env.PROMISEPAY_MODE || "offline").toLowerCase();
+
+// Effective mode is evaluated per call (not at import time, when Workers env
+// bindings may not be mirrored yet). "sandbox" only takes effect when
+// credentials exist: a deployment that sets PROMISEPAY_MODE=sandbox but has no
+// secrets must degrade to honestly-labeled offline fixtures, not throw.
+function currentMode() {
+  const wanted = (process.env.PROMISEPAY_MODE || "offline").toLowerCase();
+  return wanted === "sandbox" && process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? "sandbox" : "offline";
+}
 
 let tokenCache = { token: null, expiresAt: 0 };
 
@@ -37,14 +45,19 @@ function fixture(tag) {
   return { provenance: "fixture", note: "offline fixture record, not retrieved from PayPal" , ...tag };
 }
 
+// Ids minted by the offline fixtures (demo seed, tests) are always served as
+// labeled fixtures, even in sandbox mode: they do not exist at PayPal, and the
+// demo must be resettable on a deployment that has real sandbox credentials.
+const isFixtureId = (id) => typeof id === "string" && id.startsWith("OFFLINE");
+
 export function mode() {
-  return MODE;
+  return currentMode();
 }
 
 // --- Orders v2 ---------------------------------------------------------
 
 export async function getOrder(orderId) {
-  if (MODE === "offline") {
+  if (currentMode() === "offline" || isFixtureId(orderId)) {
     return fixture({ kind: "order", id: orderId, status: "APPROVED" });
   }
   const token = await accessToken();
@@ -57,7 +70,7 @@ export async function getOrder(orderId) {
 }
 
 export async function createOrder({ amount, currency = "USD", reference }) {
-  if (MODE === "offline") {
+  if (currentMode() === "offline") {
     return fixture({ kind: "order", id: `OFFLINE-${Math.random().toString(36).slice(2, 10)}`, status: "CREATED", amount, currency, reference });
   }
   const token = await accessToken();
@@ -74,7 +87,7 @@ export async function createOrder({ amount, currency = "USD", reference }) {
 }
 
 export async function captureOrder(orderId) {
-  if (MODE === "offline") {
+  if (currentMode() === "offline") {
     return fixture({ kind: "capture", id: `OFFLINE-CAP-${Math.random().toString(36).slice(2, 8)}`, status: "COMPLETED", order_id: orderId });
   }
   const token = await accessToken();
@@ -91,7 +104,7 @@ export async function captureOrder(orderId) {
 // --- Captures / refunds ------------------------------------------------
 
 export async function getCapture(captureId) {
-  if (MODE === "offline") {
+  if (currentMode() === "offline" || isFixtureId(captureId)) {
     return fixture({ kind: "capture", id: captureId, status: "COMPLETED", amount: { currency_code: "USD", value: "100.00" } });
   }
   const token = await accessToken();
@@ -104,7 +117,7 @@ export async function getCapture(captureId) {
 }
 
 export async function refundCapture({ captureId, amount, currency = "USD", idempotencyKey }) {
-  if (MODE === "offline") {
+  if (currentMode() === "offline" || isFixtureId(captureId)) {
     // Offline refunds succeed deterministically except for a sentinel id used by
     // the decline-simulation test — mirrors PayPal-Mock-Response INSTRUMENT_DECLINED.
     if (captureId === "OFFLINE-DECLINE") {
@@ -130,7 +143,7 @@ export async function refundCapture({ captureId, amount, currency = "USD", idemp
 }
 
 export async function listRefundsForCapture(captureId) {
-  if (MODE === "offline") {
+  if (currentMode() === "offline") {
     // The store's event log is the fixture ledger in offline mode.
     return { provenance: "fixture", refunds: [] };
   }
@@ -148,7 +161,7 @@ export async function listRefundsForCapture(captureId) {
 
 export async function verifyWebhookSignature(headers, rawBody) {
   const hget = (name) => (typeof headers?.get === "function" ? headers.get(name) : headers?.[name]);
-  if (MODE === "offline") {
+  if (currentMode() === "offline") {
     // Offline test webhooks carry a dev signature header; document clearly.
     return { provenance: "fixture", verified: hget("x-promisepay-dev-webhook") === "1" };
   }
