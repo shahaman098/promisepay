@@ -18,7 +18,7 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Nov 
 npm install
 npm run seed    # two demo guarantees: one breached → refund; one inconclusive → refused
 npm start       # http://localhost:8787 — buyer view + merchant console served from the API itself
-npm test        # 17 tests: the adversarial matrix + parser eval corpus + API contract suite
+npm test        # 20 tests: adversarial matrix + parser eval corpus + API contract + audit regressions
 ```
 
 ## Deploy (Cloudflare Workers — live demo)
@@ -67,13 +67,9 @@ Webhook events: `POST /webhooks/paypal` verifies signatures via `/v1/notificatio
 | T7 | Genuine evidenced breach | refund executes · `refunded` |
 | T8 | PayPal declines the refund | `refund_failed` + obligation on record, state stays open |
 
-## The 3-minute video storyboard
+## Demo video
 
-1. **0:00–0:25** — a merchant types a promise in prose: *"2-day delivery or $5 back."* The AI parses it into an SLA (show the JSON, parsed-by label).
-2. **0:25–1:00** — the order happens; the carrier feed stalls past the window (show the event arriving).
-3. **1:00–1:30** — evaluation: evidence checks tick red; **the refund lands in PayPal** (show the refund record + provenance + retrieval time).
-4. **1:30–2:10** — the attacks: a crafted request tries to pay on no evidence, overpay, stale-version replay, double-execute — every refusal flashes with its persisted failed-obligation record.
-5. **2:10–2:45** — the merchant console (AG Studio) and the buyer's trust badge; close on: *"A promise was made. The world failed it. The money moved itself."*
+Shot list and narration: [`video/SCRIPT.md`](./video/SCRIPT.md).
 
 ## Honest scope statement (per rules: documented, no overclaims)
 

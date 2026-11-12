@@ -9,6 +9,7 @@
   "scripts": {
     "seed": "npm --workspace server run seed",
     "start": "npm --workspace server run start",
-    "test": "npm --workspace server run test"
+    "test": "npm --workspace server run test",
+    "verify:sandbox": "npm --workspace server run verify:sandbox"
   }
 }

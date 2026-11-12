@@ -2,7 +2,7 @@
 // expected outcomes. This is the red-team demand: "evaluate extraction on
 // held-out notes containing promises, negation, ambiguity, and multiple
 // remedies." The fallback parser must pass ALL of these deterministically;
-// when an LLM key is configured, run `npm run eval:llm` to compare.
+// the live LLM path is validated by the same refusal guards (see parser.js).
 
 import { test } from "node:test";
 import assert from "node:assert/strict";

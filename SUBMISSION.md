@@ -51,4 +51,4 @@ Merchants sell promises ("2-day delivery or $5 back"). PromisePay's AI turns eac
 - [x] Tools list above
 - [ ] Demo video <3 min, public YouTube ← record with video/SCRIPT.md
 - [x] Text description (this file)
-- [ ] Submit by Nov 5 for early eligibility check (final deadline Nov 12, 8pm GMT)
+- [ ] Submit before the final deadline: Nov 12, 8pm GMT (the Nov 5 early check has passed)

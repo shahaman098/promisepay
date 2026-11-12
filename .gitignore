@@ -7,3 +7,6 @@ data/
 # Cloudflare local state
 .wrangler/
 .dev.vars
+
+# test scratch dirs
+server/test/pp-*/
